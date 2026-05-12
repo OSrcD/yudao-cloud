@@ -36,6 +36,7 @@ import static cn.iocoder.yudao.module.infra.framework.file.core.utils.FileTypeUt
 @Tag(name = "管理后台 - 文件存储")
 @RestController
 @RequestMapping("/infra/file")
+@TenantIgnore
 @Validated
 @Slf4j
 public class FileController {
@@ -44,6 +45,7 @@ public class FileController {
     private FileService fileService;
 
     @PostMapping("/upload")
+    @PermitAll
     @Operation(summary = "上传文件", description = "模式一：后端上传文件")
     @Parameter(name = "file", description = "文件附件", required = true,
             schema = @Schema(type = "string", format = "binary"))

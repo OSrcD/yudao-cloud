@@ -59,4 +59,12 @@ public interface AiWorkflowService {
      */
     Object testWorkflow(AiWorkflowTestReqVO testReqVO);
 
+    /**
+     * 生成 AI 工作流的 HTML 渲染页面（用于小程序端展示）
+     *
+     * @param id 工作流编号
+     * @return HTML 内容
+     */
+    String generateWorkflowHtml(Long id);
+
 }

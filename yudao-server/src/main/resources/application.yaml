@@ -13,8 +13,8 @@ spring:
   servlet:
     # 文件上传相关配置项
     multipart:
-      max-file-size: 16MB # 单个文件大小
-      max-request-size: 32MB # 设置总上传的文件大小
+      max-file-size: 128MB # 单个文件大小
+      max-request-size: 256MB # 设置总上传的文件大小
 
   # Jackson 配置项
   jackson:
@@ -335,6 +335,7 @@ yudao:
     enable: true
     ignore-urls:
       - /jmreport/* # 积木报表，无法携带租户编号
+      - /admin-api/business/local-task/** # 本地任务拉取，无法携带租户编号
     ignore-visit-urls:
       - /admin-api/system/user/profile/**
       - /admin-api/system/auth/**

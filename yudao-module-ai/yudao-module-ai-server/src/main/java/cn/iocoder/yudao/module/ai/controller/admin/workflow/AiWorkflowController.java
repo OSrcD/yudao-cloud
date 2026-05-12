@@ -74,4 +74,12 @@ public class AiWorkflowController {
         return success(workflowService.testWorkflow(testReqVO));
     }
 
+    @GetMapping("/generate-html")
+    @Operation(summary = "生成 AI 工作流 HTML 页面")
+    @Parameter(name = "id", description = "编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('ai:workflow:query')")
+    public String generateWorkflowHtml(@RequestParam("id") Long id) {
+        return workflowService.generateWorkflowHtml(id);
+    }
+
 }
