@@ -174,6 +174,13 @@ public class AiModelServiceImpl implements AiModelService {
     }
 
     @Override
+    public cn.iocoder.yudao.module.ai.framework.ai.core.model.aihubmix.api.video.AihubmixVideoApi getAihubmixVideoApi(Long id) {
+        AiModelDO model = validateModel(id);
+        AiApiKeyDO apiKey = apiKeyService.validateApiKey(model.getKeyId());
+        return modelFactory.getOrCreateAihubmixVideoApi(apiKey.getApiKey(), apiKey.getUrl());
+    }
+
+    @Override
     public SunoApi getSunoApi() {
         AiApiKeyDO apiKey = apiKeyService.getRequiredDefaultApiKey(
                 AiPlatformEnum.SUNO.getPlatform(), CommonStatusEnum.ENABLE.getStatus());

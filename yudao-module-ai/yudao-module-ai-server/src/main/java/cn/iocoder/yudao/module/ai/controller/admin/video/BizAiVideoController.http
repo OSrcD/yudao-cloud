@@ -17,14 +17,29 @@ tenant-id: {{adminTenantId}}
 ### 同步视频生成进展
 GET {{baseUrl}}/ai/video/syncGeekAiVeoVideo
 Authorization: Bearer {{token}}
-tenant-id: {{tenantId}}
+tenant-id: {{adminTenantId}}
 
-### 获得视频分页
-GET {{baseUrl}}/ai/video/page?pageNo=1&pageSize=10
+### 提交视频生成任务 (Aihubmix)
+POST {{baseUrl}}/ai/video/submitAihubmix
 Authorization: Bearer {{token}}
-tenant-id: {{tenantId}}
+Content-Type: application/json
+tenant-id: {{adminTenantId}}
 
-### 删除视频
-DELETE {{baseUrl}}/ai/video/delete?id=1
+{
+  "prompt": "画面：中景，平拍，轻微向上摇摄。女性角色举起右手指向天花板吊灯。保持光线和整体外观与参考帧一致。",
+  "modelId": 69,
+  "size": "1024x1024",
+  "seconds": "5",
+  "inputReference": "http://8.148.177.33:48080/admin-api/infra/file/29/get/20260507/1000001919_1778098062789.png"
+}
+
+### 同步视频生成进展 (Aihubmix)
+GET {{baseUrl}}/ai/video/syncAihubmixVideo
 Authorization: Bearer {{token}}
-tenant-id: {{tenantId}}
+tenant-id: {{adminTenantId}}
+
+### 同步指定 ID 的视频生成进展 (Aihubmix)
+GET {{baseUrl}}/ai/video/syncAihubmixVideo?id=28
+Authorization: Bearer {{token}}
+tenant-id: {{adminTenantId}}
+

@@ -102,6 +102,15 @@ public interface AiModelFactory {
     cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.video.GeekAiVideoVeoApi getOrCreateGeekAiVideoVeoApi(String apiKey, String url);
 
     /**
+     * 基于指定配置，获得 AihubmixVideoApi 对象
+     *
+     * @param apiKey API KEY
+     * @param url API URL
+     * @return AihubmixVideoApi 对象
+     */
+    cn.iocoder.yudao.module.ai.framework.ai.core.model.aihubmix.api.video.AihubmixVideoApi getOrCreateAihubmixVideoApi(String apiKey, String url);
+
+    /**
      * 基于指定配置，获得 SunoApi 对象
      *
      * 如果不存在，则进行创建

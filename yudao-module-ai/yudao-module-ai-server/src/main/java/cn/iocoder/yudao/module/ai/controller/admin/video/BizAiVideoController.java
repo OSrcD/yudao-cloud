@@ -3,9 +3,10 @@ package cn.iocoder.yudao.module.ai.controller.admin.video;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
+import cn.iocoder.yudao.module.ai.controller.admin.video.vo.BizAiVideoAihubmixSubmitReqVO;
+import cn.iocoder.yudao.module.ai.controller.admin.video.vo.BizAiVideoGeekAiVeoSubmitReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.video.vo.BizAiVideoPageReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.video.vo.BizAiVideoRespVO;
-import cn.iocoder.yudao.module.ai.controller.admin.video.vo.BizAiVideoGeekAiVeoSubmitReqVO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.video.BizAiVideoDO;
 import cn.iocoder.yudao.module.ai.service.video.BizAiVideoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,6 +47,24 @@ public class BizAiVideoController {
             return success(true);
         }
         videoService.syncGeekAiVeoVideo();
+        return success(true);
+    }
+
+    @PostMapping("/submitAihubmix")
+    @Operation(summary = "提交Aihubmix视频生成任务")
+    public CommonResult<Long> submitAihubmix(@Valid @RequestBody BizAiVideoAihubmixSubmitReqVO submitReqVO) {
+        return success(videoService.submitAihubmixVideo(getLoginUserId(), submitReqVO));
+    }
+
+    @GetMapping("/syncAihubmixVideo")
+    @Operation(summary = "同步Aihubmix视频生成进展")
+    @Parameter(name = "id", description = "编号", required = false)
+    public CommonResult<Boolean> syncAihubmixVideo(@RequestParam(value = "id", required = false) Long id) {
+        if (id != null) {
+            videoService.syncAihubmixVideo(id);
+            return success(true);
+        }
+        videoService.syncAihubmixVideo();
         return success(true);
     }
 

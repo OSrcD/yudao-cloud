@@ -161,4 +161,12 @@ public interface AiModelService {
      */
     GeekAiVideoVeoApi getGeekAiVideoVeoApi(Long id);
 
+    /**
+     * 获得 AihubmixVideoApi 对象
+     *
+     * @param id 编号
+     * @return AihubmixVideoApi 对象
+     */
+    cn.iocoder.yudao.module.ai.framework.ai.core.model.aihubmix.api.video.AihubmixVideoApi getAihubmixVideoApi(Long id);
+
 }

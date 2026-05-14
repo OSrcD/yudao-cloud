@@ -307,6 +307,13 @@ public class AiModelFactoryImpl implements AiModelFactory {
     }
 
     @Override
+    public cn.iocoder.yudao.module.ai.framework.ai.core.model.aihubmix.api.video.AihubmixVideoApi getOrCreateAihubmixVideoApi(String apiKey, String url) {
+        String cacheKey = buildClientCacheKey(cn.iocoder.yudao.module.ai.framework.ai.core.model.aihubmix.api.video.AihubmixVideoApi.class, AiPlatformEnum.Aihubmix.getPlatform(), apiKey,
+                url);
+        return Singleton.get(cacheKey, (Func0<cn.iocoder.yudao.module.ai.framework.ai.core.model.aihubmix.api.video.AihubmixVideoApi>) () -> new cn.iocoder.yudao.module.ai.framework.ai.core.model.aihubmix.api.video.AihubmixVideoApi(url, apiKey));
+    }
+
+    @Override
     public SunoApi getOrCreateSunoApi(String apiKey, String url) {
         String cacheKey = buildClientCacheKey(SunoApi.class, AiPlatformEnum.SUNO.getPlatform(), apiKey, url);
         return Singleton.get(cacheKey, (Func0<SunoApi>) () -> new SunoApi(url));
