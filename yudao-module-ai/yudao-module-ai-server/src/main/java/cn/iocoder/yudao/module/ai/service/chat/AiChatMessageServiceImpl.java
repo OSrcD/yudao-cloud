@@ -10,6 +10,7 @@ import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
+import cn.iocoder.yudao.module.ai.controller.admin.chat.vo.conversation.AiChatConversationCreateMyReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.chat.vo.message.AiChatMessagePageReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.chat.vo.message.AiChatMessageRespVO;
 import cn.iocoder.yudao.module.ai.controller.admin.chat.vo.message.AiChatMessageSendReqVO;
@@ -26,6 +27,7 @@ import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
 import cn.iocoder.yudao.module.ai.framework.ai.core.webserch.AiWebSearchClient;
 import cn.iocoder.yudao.module.ai.framework.ai.core.webserch.AiWebSearchRequest;
 import cn.iocoder.yudao.module.ai.framework.ai.core.webserch.AiWebSearchResponse;
+import cn.iocoder.yudao.module.ai.service.image.AiImageService;
 import cn.iocoder.yudao.module.ai.service.knowledge.AiKnowledgeDocumentService;
 import cn.iocoder.yudao.module.ai.service.knowledge.AiKnowledgeSegmentService;
 import cn.iocoder.yudao.module.ai.service.knowledge.bo.AiKnowledgeSegmentSearchReqBO;
@@ -48,13 +50,16 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.MimeTypeUtils;
 import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
@@ -344,7 +349,11 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         });
 
         // 1.3 当前 user message 新发送消息
-        chatMessages.add(new UserMessage(sendReqVO.getContent()));
+        if (Boolean.TRUE.equals(sendReqVO.getIsAnalysis())) {
+            chatMessages.add(buildAnalysisUserMessage(sendReqVO.getContent(), sendReqVO.getAttachmentUrls()));
+        } else {
+            chatMessages.add(new UserMessage(sendReqVO.getContent()));
+        }
 
         // 1.4 知识库，通过 UserMessage 实现
         if (CollUtil.isNotEmpty(knowledgeSegments)) {
@@ -368,7 +377,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         }
 
         // 1.6 附件，通过 UserMessage 实现
-        if (CollUtil.isNotEmpty(sendReqVO.getAttachmentUrls())) {
+        if (!Boolean.TRUE.equals(sendReqVO.getIsAnalysis()) && CollUtil.isNotEmpty(sendReqVO.getAttachmentUrls())) {
             UserMessage attachmentUserMessage = buildAttachmentUserMessage(sendReqVO.getAttachmentUrls());
             if (attachmentUserMessage != null) {
                 chatMessages.add(attachmentUserMessage);
@@ -383,7 +392,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         AiPlatformEnum platform = AiPlatformEnum.validatePlatform(model.getPlatform());
         ChatOptions chatOptions = AiUtils.buildChatOptions(platform, model.getModel(),
                 conversation.getTemperature(), conversation.getMaxTokens(),
-                toolCallbacks, toolContext);
+                toolCallbacks, toolContext, sendReqVO.getResponseFormat());
         return new Prompt(chatMessages, chatOptions);
     }
 
@@ -500,6 +509,27 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         return new UserMessage(String.format(Attachment_USER_MESSAGE_TEMPLATE, attachment));
     }
 
+    private UserMessage buildAnalysisUserMessage(String content, List<String> attachmentUrls) {
+        if (CollUtil.isEmpty(attachmentUrls)) {
+            return new UserMessage(content);
+        }
+        List<Media> mediaList = new ArrayList<>();
+        for (String url : attachmentUrls) {
+            if (StrUtil.isBlank(url)) {
+                continue;
+            }
+            String mimeType = MimeTypeUtils.IMAGE_PNG_VALUE; // 默认图片
+            if (url.toLowerCase().endsWith(".mp4") || url.toLowerCase().endsWith(".mov")) {
+                mimeType = url.toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4";
+            }
+            try {
+                mediaList.add(new Media(MimeTypeUtils.parseMimeType(mimeType), new UrlResource(url)));
+            } catch (Exception ignored) {
+            }
+        }
+        return UserMessage.builder().text(content).media(mediaList).build();
+    }
+
     private AiChatMessageDO createChatMessage(Long conversationId, Long replyId,
                                               AiModelDO model, Long userId, Long roleId,
                                               MessageType messageType, String content, Boolean useContext,
@@ -566,5 +596,59 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
     public PageResult<AiChatMessageDO> getChatMessagePage(AiChatMessagePageReqVO pageReqVO) {
         return chatMessageMapper.selectPage(pageReqVO);
     }
+
+    @Override
+    public Flux<CommonResult<AiChatMessageSendRespVO>> analyzeVideoAndGenerateScript(Long userId, String content, List<String> videoUrls,
+                                                                              List<String> charImageUrls, List<String> productImageUrls) {
+        // 1. 获取三套提示词角色
+        AiChatRoleDO reverseEngineerRole = CollUtil.getFirst(chatRoleService.getChatRoleListByName("短视频分镜逆向工程师"));
+        AiChatRoleDO rewriterRole = CollUtil.getFirst(chatRoleService.getChatRoleListByName("短视频8秒生成单元无损改写器"));
+        AiChatRoleDO directorRole = CollUtil.getFirst(chatRoleService.getChatRoleListByName("短视频8秒生成单元模板复刻导演"));
+
+        if (reverseEngineerRole == null || rewriterRole == null || directorRole == null) {
+            return Flux.error(exception(ErrorCodeConstants.CHAT_ROLE_NOT_EXISTS));
+        }
+
+        // 2. 创建对话 (使用第一个角色 ID)
+        Long conversationId = chatConversationService.createChatConversationMy(
+                new AiChatConversationCreateMyReqVO().setRoleId(reverseEngineerRole.getId()), userId);
+
+        // Step 1: 逆向工程分析
+        AiChatMessageSendReqVO req1 = new AiChatMessageSendReqVO()
+                .setConversationId(conversationId)
+                .setContent("")
+                .setAttachmentUrls(videoUrls)
+                .setUseContext(true)
+                .setIsAnalysis(true);
+
+        // Step 2: 无损改写
+        AiChatMessageSendReqVO req2 = new AiChatMessageSendReqVO()
+                .setConversationId(conversationId)
+                .setContent(rewriterRole.getSystemMessage())
+                .setUseContext(true)
+                .setIsAnalysis(true);
+
+        // Step 3: 模板复刻导演生成 JSON
+        List<String> allImageUrls = new ArrayList<>();
+        if (charImageUrls != null) allImageUrls.addAll(charImageUrls);
+        if (productImageUrls != null) allImageUrls.addAll(productImageUrls);
+
+        AiChatMessageSendReqVO req3 = new AiChatMessageSendReqVO()
+                .setConversationId(conversationId)
+                .setContent(directorRole.getSystemMessage())
+                .setAttachmentUrls(allImageUrls)
+                .setUseContext(true)
+                .setIsAnalysis(true)
+                .setResponseFormat("json_object");
+
+        // 3. 连环调用：使用 concatWith 确保顺序执行
+        return sendChatMessageStream(req1, userId)
+                .concatWith(Flux.defer(() -> sendChatMessageStream(req2, userId)))
+                .concatWith(Flux.defer(() -> sendChatMessageStream(req3, userId)));
+    }
+
+
+
+    //
 
 }

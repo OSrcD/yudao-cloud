@@ -18,6 +18,8 @@ import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
 
@@ -39,6 +41,11 @@ public class AiUtils {
 
     public static ChatOptions buildChatOptions(AiPlatformEnum platform, String model, Double temperature, Integer maxTokens,
                                                List<ToolCallback> toolCallbacks, Map<String, Object> toolContext) {
+        return buildChatOptions(platform, model, temperature, maxTokens, toolCallbacks, toolContext, null);
+    }
+
+    public static ChatOptions buildChatOptions(AiPlatformEnum platform, String model, Double temperature, Integer maxTokens,
+                                               List<ToolCallback> toolCallbacks, Map<String, Object> toolContext, String responseFormat) {
         toolCallbacks = ObjUtil.defaultIfNull(toolCallbacks, Collections.emptyList());
         toolContext = ObjUtil.defaultIfNull(toolContext, Collections.emptyMap());
         // noinspection EnhancedSwitchMigration
@@ -66,11 +73,15 @@ public class AiUtils {
                 return MoonshotChatOptions.builder().model(model).temperature(temperature).maxTokens(maxTokens)
                         .toolCallbacks(toolCallbacks).toolContext(toolContext).build();
             case OPENAI:
-            case GEMINI: // 复用 OpenAI 客户端
+            case GEMINI:
             case BAI_CHUAN: // 复用 OpenAI 客户端
             case GROK: // 复用 OpenAI 客户端
-                return OpenAiChatOptions.builder().model(model).temperature(temperature).maxTokens(maxTokens)
+                OpenAiChatOptions options = OpenAiChatOptions.builder().model(model).temperature(temperature).maxTokens(maxTokens)
                         .toolCallbacks(toolCallbacks).toolContext(toolContext).build();
+                if (StrUtil.isNotEmpty(responseFormat)) {
+                    options.setResponseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build());
+                }
+                return options;
             case AZURE_OPENAI:
                 return AzureOpenAiChatOptions.builder().deploymentName(model).temperature(temperature).maxTokens(maxTokens)
                         .toolCallbacks(toolCallbacks).toolContext(toolContext).build();

@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.ai.service.model;
 
 import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.AiModelFactory;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.genai.api.GenAiApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.suno.api.SunoApi;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
@@ -146,6 +147,14 @@ public class AiModelServiceImpl implements AiModelService {
         AiModelDO model = validateModel(id);
         AiApiKeyDO apiKey = apiKeyService.validateApiKey(model.getKeyId());
         return modelFactory.getOrCreateMidjourneyApi(apiKey.getApiKey(), apiKey.getUrl());
+    }
+
+
+    @Override
+    public GenAiApi getGenAiApi(Long id) {
+        AiModelDO model = validateModel(id);
+        AiApiKeyDO apiKey = apiKeyService.validateApiKey(model.getKeyId());
+        return modelFactory.getOrCreateGenAiApi(apiKey.getApiKey(), apiKey.getUrl());
     }
 
     @Override

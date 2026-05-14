@@ -40,3 +40,18 @@ Authorization: {{token}}
   "height": "1",
   "version": "6.0"
 }
+
+### 生成图片：生成图片（nanobanana）
+POST {{baseUrl}}/ai/image/genAi/imagine
+Content-Type: application/json
+Authorization: {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "prompt": "Create a picture of my cat eating a nano-banana in a fancy restaurant under the Gemini constellation",
+  "modelId": 66,
+  "width": "1",
+  "height": "1",
+  "version": "6.0"
+}
+

@@ -64,7 +64,7 @@ public class YudaoAiProperties {
 
         private String enable;
         private String apiKey;
-
+        private String baseUrl;
         private String model;
         private Double temperature;
         private Integer maxTokens;

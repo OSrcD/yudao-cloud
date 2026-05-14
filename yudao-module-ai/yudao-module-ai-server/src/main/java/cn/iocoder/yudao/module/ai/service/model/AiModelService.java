@@ -2,10 +2,12 @@ package cn.iocoder.yudao.module.ai.service.model;
 
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.suno.api.SunoApi;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.genai.api.GenAiApi;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.ai.controller.admin.model.vo.model.AiModelPageReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.model.vo.model.AiModelSaveReqVO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.model.AiModelDO;
+import com.google.genai.Client;
 import dev.tinyflow.core.Tinyflow;
 import jakarta.validation.Valid;
 import org.springframework.ai.chat.model.ChatModel;
@@ -115,6 +117,8 @@ public interface AiModelService {
      * @return MidjourneyApi 对象
      */
     MidjourneyApi getMidjourneyApi(Long id);
+
+    GenAiApi getGenAiApi(Long id);
 
     /**
      * 获得 SunoApi 对象

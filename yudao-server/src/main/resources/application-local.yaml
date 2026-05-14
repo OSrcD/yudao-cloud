@@ -259,7 +259,7 @@ spring:
   ai:
     google:
       genai:
-        api-key:
+        api-key: 123456
         chat:
           options:
             model-fast: gemini-3-flash-preview

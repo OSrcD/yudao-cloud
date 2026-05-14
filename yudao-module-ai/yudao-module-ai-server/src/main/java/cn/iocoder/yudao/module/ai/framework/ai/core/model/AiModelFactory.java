@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.ai.framework.ai.core.model;
 
 import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.genai.api.GenAiApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.suno.api.SunoApi;
 import org.springframework.ai.chat.model.ChatModel;
@@ -71,6 +72,15 @@ public interface AiModelFactory {
      * @return MidjourneyApi 对象
      */
     MidjourneyApi getOrCreateMidjourneyApi(String apiKey, String url);
+
+    /**
+     * 基于指定配置，获得 Google GenAI Client 对象
+     *
+     * @param apiKey API KEY
+     * @param url API URL
+     * @return Client 对象
+     */
+    GenAiApi getOrCreateGenAiApi(String apiKey, String url);
 
     /**
      * 基于指定配置，获得 SunoApi 对象

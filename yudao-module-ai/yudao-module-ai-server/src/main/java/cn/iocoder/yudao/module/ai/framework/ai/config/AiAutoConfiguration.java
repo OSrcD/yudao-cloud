@@ -37,12 +37,15 @@ import org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusServiceClie
 import org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreProperties;
 import org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantVectorStoreProperties;
 import org.springframework.ai.vectorstore.redis.autoconfigure.RedisVectorStoreProperties;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -85,11 +88,24 @@ public class AiAutoConfiguration {
         if (StrUtil.isEmpty(properties.getModel())) {
             properties.setModel(GeminiChatModel.MODEL_DEFAULT);
         }
+
+        if (StrUtil.isEmpty(properties.getBaseUrl())) {
+            properties.setBaseUrl(GeminiChatModel.BASE_URL);
+        }
+
+        // 创建 RestClient.Builder，并设置超时时间为 10 分钟
+        RestClient.Builder restClientBuilder = RestClient.builder()
+                .requestFactory(new HttpComponentsClientHttpRequestFactory() {{
+                    setConnectTimeout(Duration.ofMinutes(10));
+                    setReadTimeout(Duration.ofMinutes(10));
+                }});
+
         OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
                 .openAiApi(OpenAiApi.builder()
-                        .baseUrl(GeminiChatModel.BASE_URL)
                         .completionsPath(GeminiChatModel.COMPLETE_PATH)
                         .apiKey(properties.getApiKey())
+                        .baseUrl(properties.getBaseUrl())
+                        .restClientBuilder(restClientBuilder)
                         .build())
                 .defaultOptions(OpenAiChatOptions.builder()
                         .model(properties.getModel())

@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.ai.controller.admin.image;
 
 import cn.hutool.core.util.ObjUtil;
+import cn.iocoder.yudao.module.ai.controller.admin.image.vo.nanobanana.AiGenAiImagineReqVO;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
@@ -135,5 +136,15 @@ public class AiImageController {
         imageService.deleteImage(id);
         return success(true);
     }
+
+
+    // ================ Nano Banana 专属 ================
+    @Operation(summary = "【genAi】生成图片")
+    @PostMapping("/genAi/imagine")
+    public CommonResult<Long> genAiImagine(@Valid @RequestBody AiGenAiImagineReqVO reqVO) {
+        Long imageId = imageService.genAiImagine(getLoginUserId(), reqVO);
+        return success(imageId);
+    }
+
 
 }

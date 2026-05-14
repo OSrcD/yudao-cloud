@@ -17,12 +17,16 @@ import cn.iocoder.yudao.module.ai.controller.admin.image.vo.AiImagePublicPageReq
 import cn.iocoder.yudao.module.ai.controller.admin.image.vo.AiImageUpdateReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.image.vo.midjourney.AiMidjourneyActionReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.image.vo.midjourney.AiMidjourneyImagineReqVO;
+import cn.iocoder.yudao.module.ai.controller.admin.image.vo.nanobanana.AiGenAiImagineReqVO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.image.AiImageDO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.model.AiModelDO;
 import cn.iocoder.yudao.module.ai.dal.mysql.image.AiImageMapper;
 import cn.iocoder.yudao.module.ai.enums.image.AiImageStatusEnum;
 import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.genai.api.GenAiApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
+import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.siliconflow.SiliconFlowImageOptions;
 import cn.iocoder.yudao.module.ai.service.model.AiModelService;
 import cn.iocoder.yudao.module.infra.api.file.FileApi;
@@ -42,6 +46,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -370,6 +375,66 @@ public class AiImageServiceImpl implements AiImageService {
      */
     private AiImageServiceImpl getSelf() {
         return SpringUtil.getBean(getClass());
+    }
+
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Long genAiImagine(Long userId, AiGenAiImagineReqVO drawReqVO) {
+        // 1. 校验模型
+        AiModelDO model = modelService.validateModel(drawReqVO.getModelId());
+        Assert.equals(model.getPlatform(), AiPlatformEnum.GEMINI.getPlatform(), "平台不匹配");
+
+        // 2. 保存数据库
+        AiImageDO image = BeanUtils.toBean(drawReqVO, AiImageDO.class).setUserId(userId).setPublicStatus(false)
+                .setStatus(AiImageStatusEnum.IN_PROGRESS.getStatus())
+                .setPlatform(AiPlatformEnum.GEMINI.getPlatform()).setModelId(model.getId()).setModel(model.getName());
+        imageMapper.insert(image);
+
+        // 3. 异步绘制
+        getSelf().executeGenAiImagine(image, drawReqVO, model);
+        return image.getId();
+    }
+
+    @Async
+    public void executeGenAiImagine(AiImageDO image, AiGenAiImagineReqVO drawReqVO, AiModelDO model) {
+        try {
+            // 1.1 获取客户端
+            GenAiApi genAiApi = modelService.getGenAiApi(model.getId());
+            // 1.2 下载参考图
+            byte[] imageBytes = null;
+            if (StrUtil.isNotBlank(drawReqVO.getReferImageUrl())) {
+                imageBytes = HttpUtil.downloadBytes(drawReqVO.getReferImageUrl());
+            }
+
+            // 2. 执行请求
+            GenerateContentResponse response = genAiApi.generateContent(model.getModel(), drawReqVO.getPrompt(), imageBytes);
+
+            // 3. 处理结果
+            byte[] generatedImage = null;
+            for (Part part : response.parts()) {
+                if (part.inlineData().isPresent() && part.inlineData().get().data().isPresent()) {
+                    generatedImage = part.inlineData().get().data().get();
+                    break;
+                }
+            }
+
+            if (generatedImage == null) {
+                throw new IllegalArgumentException("生成图片失败，响应中未包含图片数据");
+            }
+
+            // 4. 上传到文件服务
+            String filePath = fileApi.createFile(generatedImage);
+
+            // 5. 更新数据库
+            imageMapper.updateById(new AiImageDO().setId(image.getId()).setStatus(AiImageStatusEnum.SUCCESS.getStatus())
+                    .setPicUrl(filePath).setFinishTime(LocalDateTime.now()));
+        } catch (Exception ex) {
+            log.error("[executeGenAiImagine][image({}) 生成异常]", image, ex);
+            imageMapper.updateById(new AiImageDO().setId(image.getId())
+                    .setStatus(AiImageStatusEnum.FAIL.getStatus())
+                    .setErrorMessage(ex.getMessage()).setFinishTime(LocalDateTime.now()));
+        }
     }
 
 }

@@ -19,9 +19,10 @@ import reactor.core.publisher.Flux;
 public class GeminiChatModel implements ChatModel {
 
     public static final String BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/";
-    public static final String COMPLETE_PATH = "/chat/completions";
+    public static final String COMPLETE_PATH = "/v1/chat/completions";
 
-    public static final String MODEL_DEFAULT = "gemini-2.5-flash";
+//    public static final String MODEL_DEFAULT = "gemini-2.5-flash";
+    public static final String MODEL_DEFAULT = "gemini-3.1-pro";
 
     /**
      * 兼容 OpenAI 接口，进行复用

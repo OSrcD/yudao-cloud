@@ -84,4 +84,17 @@ public interface AiChatMessageService {
      */
     PageResult<AiChatMessageDO> getChatMessagePage(AiChatMessagePageReqVO pageReqVO);
 
+    /**
+     * 生成 VEO3 视频分析 JSON
+     *
+     * @param userId 用户编号
+     * @param content 内容
+     * @param videoUrls 视频 URL 列表
+     * @param charImageUrls 角色图片 URL 列表
+     * @param productImageUrls 产品图片 URL 列表
+     * @return 分析结果
+     */
+    Flux<CommonResult<AiChatMessageSendRespVO>> analyzeVideoAndGenerateScript(Long userId, String content, List<String> videoUrls,
+                                                                              List<String> charImageUrls, List<String> productImageUrls) ;
+
 }

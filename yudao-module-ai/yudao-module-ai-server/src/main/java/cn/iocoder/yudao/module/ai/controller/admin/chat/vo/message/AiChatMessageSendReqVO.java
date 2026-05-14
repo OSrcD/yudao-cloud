@@ -28,4 +28,10 @@ public class AiChatMessageSendReqVO {
     @Schema(description = "附件 URL 数组", example = "https://www.iocoder.cn/1.png")
     private List<String> attachmentUrls;
 
+    @Schema(description = "是否分析模式（视频/图片分析）", example = "true")
+    private Boolean isAnalysis;
+
+    @Schema(description = "响应格式，例如 json_object", example = "json_object")
+    private String responseFormat;
+
 }

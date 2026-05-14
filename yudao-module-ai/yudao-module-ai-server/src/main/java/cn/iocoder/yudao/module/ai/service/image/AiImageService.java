@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.ai.service.image;
 
+import cn.iocoder.yudao.module.ai.controller.admin.image.vo.nanobanana.AiGenAiImagineReqVO;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.ai.controller.admin.image.vo.*;
@@ -7,6 +8,7 @@ import cn.iocoder.yudao.module.ai.controller.admin.image.vo.midjourney.AiMidjour
 import cn.iocoder.yudao.module.ai.controller.admin.image.vo.midjourney.AiMidjourneyImagineReqVO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.image.AiImageDO;
 import jakarta.validation.Valid;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -123,4 +125,6 @@ public interface AiImageService {
      */
     Long midjourneyAction(Long userId, AiMidjourneyActionReqVO reqVO);
 
+    @Transactional(rollbackFor = Exception.class)
+    Long genAiImagine(Long userId, AiGenAiImagineReqVO drawReqVO);
 }
