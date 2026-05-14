@@ -8,6 +8,7 @@ import cn.iocoder.yudao.module.ai.controller.admin.model.vo.model.AiModelPageReq
 import cn.iocoder.yudao.module.ai.controller.admin.model.vo.model.AiModelSaveReqVO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.model.AiModelDO;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.image.GeekAiGeminiImageApi;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.video.GeekAiVideoVeoApi;
 import dev.tinyflow.core.Tinyflow;
 import jakarta.validation.Valid;
 import org.springframework.ai.chat.model.ChatModel;
@@ -120,8 +121,6 @@ public interface AiModelService {
 
     GenAiApi getGenAiApi(Long id);
 
-    GeekAiGeminiImageApi getGeekAiGeminiImageApi(Long id);
-
     /**
      * 获得 SunoApi 对象
      *
@@ -145,5 +144,21 @@ public interface AiModelService {
      * @param modelId AI 模型 ID
      */
     void getLLmProvider4Tinyflow(Tinyflow tinyflow, Long modelId);
+
+    /**
+     * 获得 GeekAiGeminiImageApi 对象
+     *
+     * @param id 编号
+     * @return GeekAiGeminiImageApi 对象
+     */
+    GeekAiGeminiImageApi getGeekAiGeminiImageApi(Long id);
+
+    /**
+     * 获得 GeekAiVideoVeoApi 对象
+     *
+     * @param id 编号
+     * @return GeekAiVideoVeoApi 对象
+     */
+    GeekAiVideoVeoApi getGeekAiVideoVeoApi(Long id);
 
 }

@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.ai.service.model;
 import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.AiModelFactory;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.image.GeekAiGeminiImageApi;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.video.GeekAiVideoVeoApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.genai.api.GenAiApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.suno.api.SunoApi;
@@ -163,6 +164,13 @@ public class AiModelServiceImpl implements AiModelService {
         AiModelDO model = validateModel(id);
         AiApiKeyDO apiKey = apiKeyService.validateApiKey(model.getKeyId());
         return modelFactory.getOrCreateGeekAiGeminiImageApi(apiKey.getApiKey(), apiKey.getUrl());
+    }
+
+    @Override
+    public GeekAiVideoVeoApi getGeekAiVideoVeoApi(Long id) {
+        AiModelDO model = validateModel(id);
+        AiApiKeyDO apiKey = apiKeyService.validateApiKey(model.getKeyId());
+        return modelFactory.getOrCreateGeekAiVideoVeoApi(apiKey.getApiKey(), apiKey.getUrl());
     }
 
     @Override

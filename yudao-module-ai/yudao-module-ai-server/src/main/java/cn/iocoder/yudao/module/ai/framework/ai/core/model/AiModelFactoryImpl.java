@@ -300,6 +300,13 @@ public class AiModelFactoryImpl implements AiModelFactory {
     }
 
     @Override
+    public cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.video.GeekAiVideoVeoApi getOrCreateGeekAiVideoVeoApi(String apiKey, String url) {
+        String cacheKey = buildClientCacheKey(cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.video.GeekAiVideoVeoApi.class, AiPlatformEnum.GeekAI.getPlatform(), apiKey,
+                url);
+        return Singleton.get(cacheKey, (Func0<cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.video.GeekAiVideoVeoApi>) () -> new cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.video.GeekAiVideoVeoApi(url, apiKey));
+    }
+
+    @Override
     public SunoApi getOrCreateSunoApi(String apiKey, String url) {
         String cacheKey = buildClientCacheKey(SunoApi.class, AiPlatformEnum.SUNO.getPlatform(), apiKey, url);
         return Singleton.get(cacheKey, (Func0<SunoApi>) () -> new SunoApi(url));

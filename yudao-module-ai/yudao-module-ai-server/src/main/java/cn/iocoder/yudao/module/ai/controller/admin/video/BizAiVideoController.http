@@ -1,0 +1,30 @@
+### 提交视频生成任务
+POST {{baseUrl}}/ai/video/submitGeekAiVeo
+Authorization: Bearer {{token}}
+Content-Type: application/json
+tenant-id: {{adminTenantId}}
+
+{
+  "prompt": "画面：中景，平拍，轻微向上摇摄。女性角色举起右手指向天花板吊灯。保持光线和整体外观与参考帧一致。",
+  "modelId": 68,
+  "size": "720x1280",
+  "seconds": 8,
+  "inputReferences": [
+    "http://8.148.177.33:48080/admin-api/infra/file/29/get/20260507/1000001919_1778098062789.png"
+  ]
+}
+
+### 同步视频生成进展
+GET {{baseUrl}}/ai/video/syncGeekAiVeoVideo
+Authorization: Bearer {{token}}
+tenant-id: {{tenantId}}
+
+### 获得视频分页
+GET {{baseUrl}}/ai/video/page?pageNo=1&pageSize=10
+Authorization: Bearer {{token}}
+tenant-id: {{tenantId}}
+
+### 删除视频
+DELETE {{baseUrl}}/ai/video/delete?id=1
+Authorization: Bearer {{token}}
+tenant-id: {{tenantId}}

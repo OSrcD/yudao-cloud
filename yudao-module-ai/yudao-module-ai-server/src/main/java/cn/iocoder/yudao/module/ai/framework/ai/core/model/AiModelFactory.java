@@ -93,6 +93,15 @@ public interface AiModelFactory {
     GeekAiGeminiImageApi getOrCreateGeekAiGeminiImageApi(String apiKey, String url);
 
     /**
+     * 基于指定配置，获得 GeekAiVideoVeoApi 对象
+     *
+     * @param apiKey API KEY
+     * @param url API URL
+     * @return GeekAiVideoVeoApi 对象
+     */
+    cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.video.GeekAiVideoVeoApi getOrCreateGeekAiVideoVeoApi(String apiKey, String url);
+
+    /**
      * 基于指定配置，获得 SunoApi 对象
      *
      * 如果不存在，则进行创建
