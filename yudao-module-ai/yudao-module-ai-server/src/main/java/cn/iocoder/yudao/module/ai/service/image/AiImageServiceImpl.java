@@ -17,12 +17,14 @@ import cn.iocoder.yudao.module.ai.controller.admin.image.vo.AiImagePublicPageReq
 import cn.iocoder.yudao.module.ai.controller.admin.image.vo.AiImageUpdateReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.image.vo.midjourney.AiMidjourneyActionReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.image.vo.midjourney.AiMidjourneyImagineReqVO;
+import cn.iocoder.yudao.module.ai.controller.admin.image.vo.geekai.AiGeekAiImagineReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.image.vo.nanobanana.AiGenAiImagineReqVO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.image.AiImageDO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.model.AiModelDO;
 import cn.iocoder.yudao.module.ai.dal.mysql.image.AiImageMapper;
 import cn.iocoder.yudao.module.ai.enums.image.AiImageStatusEnum;
 import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.image.GeekAiGeminiImageApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.genai.api.GenAiApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
 import com.google.genai.types.GenerateContentResponse;
@@ -431,6 +433,134 @@ public class AiImageServiceImpl implements AiImageService {
                     .setPicUrl(filePath).setFinishTime(LocalDateTime.now()));
         } catch (Exception ex) {
             log.error("[executeGenAiImagine][image({}) 生成异常]", image, ex);
+            imageMapper.updateById(new AiImageDO().setId(image.getId())
+                    .setStatus(AiImageStatusEnum.FAIL.getStatus())
+                    .setErrorMessage(ex.getMessage()).setFinishTime(LocalDateTime.now()));
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Long geekAiGeminiImagine(Long userId, AiGeekAiImagineReqVO drawReqVO) {
+        // 1. 校验模型
+        AiModelDO model = modelService.validateModel(drawReqVO.getModelId());
+        Assert.equals(model.getPlatform(), AiPlatformEnum.GeekAI.getPlatform(), "平台不匹配");
+
+        // 2. 保存数据库
+        AiImageDO image = BeanUtils.toBean(drawReqVO, AiImageDO.class).setUserId(userId).setPublicStatus(false)
+                .setStatus(AiImageStatusEnum.IN_PROGRESS.getStatus())
+                .setPlatform(AiPlatformEnum.GeekAI.getPlatform()).setModelId(model.getId()).setModel(model.getName())
+                .setOptions(cn.hutool.core.bean.BeanUtil.beanToMap(drawReqVO));
+        imageMapper.insert(image);
+
+        // 3. 异步绘制
+        getSelf().executeGeekAiImagine(image, drawReqVO, model);
+        return image.getId();
+    }
+
+    @Async
+    public void executeGeekAiImagine(AiImageDO image, AiGeekAiImagineReqVO drawReqVO, AiModelDO model) {
+        try {
+            // 1.1 获取客户端
+            GeekAiGeminiImageApi geekAiGeminiImageApi = modelService.getGeekAiGeminiImageApi(model.getId());
+
+            // 2.1 构建请求内容
+            List<GeekAiGeminiImageApi.Part> parts = new ArrayList<>();
+            parts.add(GeekAiGeminiImageApi.Part.fromText(drawReqVO.getPrompt()));
+            if (cn.hutool.core.collection.CollUtil.isNotEmpty(drawReqVO.getReferImageUrls())) {
+                for (String referImageUrl : drawReqVO.getReferImageUrls()) {
+                    byte[] imageBytes = HttpUtil.downloadBytes(referImageUrl);
+                    String mimeType = "image/png";
+                    if (referImageUrl.toLowerCase().contains(".jpg") || referImageUrl.toLowerCase().contains(".jpeg")) {
+                        mimeType = "image/jpeg";
+                    }
+                    parts.add(GeekAiGeminiImageApi.Part.fromImage(mimeType, imageBytes));
+                }
+            }
+
+            // 2.2 构建请求配置
+            List<String> responseModalities = drawReqVO.getResponseModalities();
+            if (cn.hutool.core.collection.CollUtil.isEmpty(responseModalities)) {
+                responseModalities = Collections.singletonList("IMAGE");
+            }
+            GeekAiGeminiImageApi.GenerationConfig.GenerationConfigBuilder configBuilder = GeekAiGeminiImageApi.GenerationConfig.builder()
+                    .responseModalities(responseModalities);
+
+            // 构建图片配置
+            GeekAiGeminiImageApi.ImageConfig.ImageConfigBuilder imageConfigBuilder = GeekAiGeminiImageApi.ImageConfig.builder();
+            // 比例：优先使用前端传的，否则根据宽高计算
+            String aspectRatio = drawReqVO.getAspectRatio();
+            if (StrUtil.isEmpty(aspectRatio)) {
+                aspectRatio = drawReqVO.getWidth().equals(drawReqVO.getHeight()) ? "1:1" :
+                        (drawReqVO.getWidth() > drawReqVO.getHeight() ? "16:9" : "9:16");
+            }
+            imageConfigBuilder.aspectRatio(aspectRatio);
+            // 图片大小：优先使用前端传的，默认 1K
+            imageConfigBuilder.imageSize(StrUtil.blankToDefault(drawReqVO.getImageSize(), "1K"));
+            configBuilder.imageConfig(imageConfigBuilder.build());
+
+            // 安全设置
+            List<GeekAiGeminiImageApi.SafetySetting> safetySettings = null;
+            if (cn.hutool.core.collection.CollUtil.isNotEmpty(drawReqVO.getSafetySettings())) {
+                safetySettings = BeanUtils.toBean(drawReqVO.getSafetySettings(), GeekAiGeminiImageApi.SafetySetting.class);
+            }
+
+            GeekAiGeminiImageApi.GenerateContentRequest request = GeekAiGeminiImageApi.GenerateContentRequest.builder()
+                    .contents(Collections.singletonList(GeekAiGeminiImageApi.Content.builder()
+                            .role("user")
+                            .parts(parts)
+                            .build()))
+                    .generationConfig(configBuilder.build())
+                    .safetySettings(safetySettings)
+                    .build();
+
+            // 3. 执行请求
+            GeekAiGeminiImageApi.GenerateContentResponse response = geekAiGeminiImageApi.generateContent(model.getModel(), request);
+
+            // 4. 解析结果
+            byte[] generatedImage = null;
+            String picUrl = null;
+            if (response.getCandidates() != null && !response.getCandidates().isEmpty()) {
+                GeekAiGeminiImageApi.Candidate candidate = response.getCandidates().get(0);
+                if (candidate.getContent() != null && candidate.getContent().getParts() != null) {
+                    for (GeekAiGeminiImageApi.Part part : candidate.getContent().getParts()) {
+                        // 情况一：返回 Base64 数据
+                        if (part.getInlineData() != null && StrUtil.isNotEmpty(part.getInlineData().getData())) {
+                            generatedImage = Base64.decode(part.getInlineData().getData());
+                            break;
+                        }
+                        // 情况二：返回 Markdown 格式的图片链接，例如：![image](https://...)
+                        if (StrUtil.isNotEmpty(part.getText())) {
+                            String text = part.getText().trim();
+                            if (text.startsWith("![image](") && text.endsWith(")")) {
+                                picUrl = text.substring(9, text.length() - 1);
+                                break;
+                            } else if (HttpUtil.isHttp(text) || HttpUtil.isHttps(text)) {
+                                picUrl = text;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (generatedImage == null && StrUtil.isNotEmpty(picUrl)) {
+                // 如果返回的是 URL，则下载图片
+                generatedImage = HttpUtil.downloadBytes(picUrl);
+            }
+
+            if (generatedImage == null) {
+                throw new IllegalArgumentException("生成图片失败，响应中未包含图片数据");
+            }
+
+            // 5. 上传到文件服务
+            String filePath = fileApi.createFile(generatedImage);
+
+            // 6. 更新数据库
+            imageMapper.updateById(new AiImageDO().setId(image.getId()).setStatus(AiImageStatusEnum.SUCCESS.getStatus())
+                    .setPicUrl(filePath).setFinishTime(LocalDateTime.now()));
+        } catch (Exception ex) {
+            log.error("[executeGeekAiImagine][image({}) 生成异常]", image, ex);
             imageMapper.updateById(new AiImageDO().setId(image.getId())
                     .setStatus(AiImageStatusEnum.FAIL.getStatus())
                     .setErrorMessage(ex.getMessage()).setFinishTime(LocalDateTime.now()));

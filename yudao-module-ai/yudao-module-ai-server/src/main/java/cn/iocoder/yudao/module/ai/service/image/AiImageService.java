@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.ai.service.image;
 
+import cn.iocoder.yudao.module.ai.controller.admin.image.vo.geekai.AiGeekAiImagineReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.image.vo.nanobanana.AiGenAiImagineReqVO;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
@@ -127,4 +128,7 @@ public interface AiImageService {
 
     @Transactional(rollbackFor = Exception.class)
     Long genAiImagine(Long userId, AiGenAiImagineReqVO drawReqVO);
+
+    @Transactional(rollbackFor = Exception.class)
+    Long geekAiGeminiImagine(Long userId, AiGeekAiImagineReqVO drawReqVO);
 }

@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.ai.framework.ai.core.model;
 
 import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.image.GeekAiGeminiImageApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.genai.api.GenAiApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.suno.api.SunoApi;
@@ -81,6 +82,15 @@ public interface AiModelFactory {
      * @return Client 对象
      */
     GenAiApi getOrCreateGenAiApi(String apiKey, String url);
+
+    /**
+     * 基于指定配置，获得 GeekAI API 对象
+     *
+     * @param apiKey API KEY
+     * @param url API URL
+     * @return GeekAiApi 对象
+     */
+    GeekAiGeminiImageApi getOrCreateGeekAiGeminiImageApi(String apiKey, String url);
 
     /**
      * 基于指定配置，获得 SunoApi 对象

@@ -15,6 +15,7 @@ import cn.iocoder.yudao.module.ai.framework.ai.config.YudaoAiProperties;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.baichuan.BaiChuanChatModel;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.doubao.DouBaoChatModel;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.gemini.GeminiChatModel;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.image.GeekAiGeminiImageApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.genai.api.GenAiApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.hunyuan.HunYuanChatModel;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
@@ -36,7 +37,6 @@ import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.KeyCredential;
-import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
 import io.milvus.client.MilvusServiceClient;
 import io.qdrant.client.QdrantClient;
@@ -290,6 +290,13 @@ public class AiModelFactoryImpl implements AiModelFactory {
         String cacheKey = buildClientCacheKey(GenAiApi.class, AiPlatformEnum.GEMINI.getPlatform(), apiKey,
                 url);
         return Singleton.get(cacheKey, (Func0<GenAiApi>) () -> new GenAiApi(url, apiKey));
+    }
+
+    @Override
+    public GeekAiGeminiImageApi getOrCreateGeekAiGeminiImageApi(String apiKey, String url) {
+        String cacheKey = buildClientCacheKey(GeekAiGeminiImageApi.class, AiPlatformEnum.GeekAI.getPlatform(), apiKey,
+                url);
+        return Singleton.get(cacheKey, (Func0<GeekAiGeminiImageApi>) () -> new GeekAiGeminiImageApi(url, apiKey));
     }
 
     @Override

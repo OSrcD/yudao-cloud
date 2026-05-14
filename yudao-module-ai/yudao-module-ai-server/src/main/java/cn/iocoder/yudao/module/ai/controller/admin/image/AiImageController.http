@@ -55,3 +55,22 @@ tenant-id: {{adminTenantId}}
   "version": "6.0"
 }
 
+### 生成图片：生成图片（GeekAI）
+POST {{baseUrl}}/ai/image/geekai/gemini/imagine
+Content-Type: application/json
+Authorization: {{token}}
+tenant-id: {{adminTenantId}}
+
+{
+  "prompt": "把图一的人物换成图二的人物，并去掉中文字幕",
+  "modelId": 67,
+  "width": 1024,
+  "height": 1024,
+  "aspectRatio": "1:1",
+  "imageSize": "1K",
+  "referImageUrls": [
+    "http://8.148.177.33:48080/admin-api/infra/file/29/get/20260507/1000001919_1778098062789.png",
+    "http://8.148.177.33:48080/admin-api/infra/file/29/get/20260505/Gemini_Generated_Image_9x1kj69x1kj69x1k%20(1)_1777983277885.png"
+  ],
+  "safetySettings": []
+}

@@ -7,7 +7,7 @@ import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.ai.controller.admin.model.vo.model.AiModelPageReqVO;
 import cn.iocoder.yudao.module.ai.controller.admin.model.vo.model.AiModelSaveReqVO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.model.AiModelDO;
-import com.google.genai.Client;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.image.GeekAiGeminiImageApi;
 import dev.tinyflow.core.Tinyflow;
 import jakarta.validation.Valid;
 import org.springframework.ai.chat.model.ChatModel;
@@ -119,6 +119,8 @@ public interface AiModelService {
     MidjourneyApi getMidjourneyApi(Long id);
 
     GenAiApi getGenAiApi(Long id);
+
+    GeekAiGeminiImageApi getGeekAiGeminiImageApi(Long id);
 
     /**
      * 获得 SunoApi 对象
