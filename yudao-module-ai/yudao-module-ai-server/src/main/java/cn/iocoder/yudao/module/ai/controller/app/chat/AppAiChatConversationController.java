@@ -13,6 +13,8 @@ import cn.iocoder.yudao.module.ai.controller.admin.chat.vo.message.AiChatMessage
 import cn.iocoder.yudao.module.ai.dal.dataobject.chat.AiChatConversationDO;
 import cn.iocoder.yudao.module.ai.service.chat.AiChatConversationService;
 import cn.iocoder.yudao.module.ai.service.chat.AiChatMessageService;
+import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
+import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
 import com.alibaba.fastjson.JSON;
 import com.fhs.core.trans.anno.TransMethodResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,6 +46,9 @@ public class AppAiChatConversationController {
     private AiChatConversationService chatConversationService;
     @Resource
     private AiChatMessageService chatMessageService;
+
+    @Resource
+    private AdminUserApi adminUserApi;
 
     @PostMapping("/create-my")
     @Operation(summary = "创建【我的】聊天对话")
@@ -124,16 +129,23 @@ public class AppAiChatConversationController {
     @PostMapping("/testAnalyzeVideoAndGenerateScript")
     @Operation(summary = "testAnalyzeVideoAndGenerateScript")
     public void testAnalyzeVideoAndGenerateScript() {
-        // 1. 准备参数
-        Long userId = 1L; // 替换为真实的 userId
-        String content = "请分析这个视频的结构并生成创意脚本";
-        List<String> videoUrls = List.of("http://8.148.177.33:48080/admin-api/infra/file/29/get/20260505/mmexport1777964784840_1777965885014.mp4"); // 替换为真实的视频地址
-        List<String> charImageUrls = List.of(); // 替换为真实的角色参考图
-        List<String> productImageUrls = List.of(); // 替换为真实的产品参考图
-        // 2. 执行调用
-        chatMessageService.analyzeVideoAndGenerateScript(userId, content, videoUrls, charImageUrls, productImageUrls)
-                .doOnNext(result -> log.info(JSON.toJSONString(result)))
-                .subscribe();
+
+
+        CommonResult<AdminUserRespDTO> user = adminUserApi.getUser(1L);
+
+
+        System.out.println(user.getData());
+
+//        // 1. 准备参数
+//        Long userId = 1L; // 替换为真实的 userId
+//        String content = "请分析这个视频的结构并生成创意脚本";
+//        List<String> videoUrls = List.of("http://8.148.177.33:48080/admin-api/infra/file/29/get/20260505/mmexport1777964784840_1777965885014.mp4"); // 替换为真实的视频地址
+//        List<String> charImageUrls = List.of(); // 替换为真实的角色参考图
+//        List<String> productImageUrls = List.of(); // 替换为真实的产品参考图
+//        // 2. 执行调用
+//        chatMessageService.analyzeVideoAndGenerateScript(userId, content, videoUrls, charImageUrls, productImageUrls)
+//                .doOnNext(result -> log.info(JSON.toJSONString(result)))
+//                .subscribe();
     }
 
 

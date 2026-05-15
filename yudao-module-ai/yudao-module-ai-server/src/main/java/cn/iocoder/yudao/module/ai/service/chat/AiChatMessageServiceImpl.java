@@ -539,6 +539,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         AiChatMessageDO message = new AiChatMessageDO().setConversationId(conversationId).setReplyId(replyId)
                 .setModel(model.getModel()).setModelId(model.getId()).setUserId(userId).setRoleId(roleId)
                 .setType(messageType.getValue()).setContent(content).setUseContext(useContext)
+                .setUserType(cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
                 .setSegmentIds(convertList(knowledgeSegments, AiKnowledgeSegmentSearchRespBO::getId))
                 .setAttachmentUrls(attachmentUrls);
         if (webSearchResponse != null) {

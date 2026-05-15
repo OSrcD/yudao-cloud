@@ -37,9 +37,15 @@ public class AiChatConversationDO extends BaseDO {
     /**
      * 用户编号
      *
-     * 关联 AdminUserDO 的 userId 字段
+     * 关联 AdminUserDO 或 MemberUserDO 的 userId 字段
      */
     private Long userId;
+
+    /**
+     * 用户类型
+     * 1 管理员 2 会员
+     */
+    private Integer userType;
 
     /**
      * 对话标题

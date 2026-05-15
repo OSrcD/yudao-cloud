@@ -76,7 +76,7 @@ public class MemberPointRecordServiceImpl implements MemberPointRecordService {
         if (totalPoint < 0) {
             log.error("[createPointRecord][userId({}) point({}) bizType({}) bizId({}) {}]", userId, point, bizType, bizId,
                     USER_POINT_NOT_ENOUGH);
-            return;
+            throw exception(USER_POINT_NOT_ENOUGH);
         }
 
         // 2. 更新用户积分

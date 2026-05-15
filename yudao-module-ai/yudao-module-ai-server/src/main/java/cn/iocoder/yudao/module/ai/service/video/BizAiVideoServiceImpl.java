@@ -69,6 +69,7 @@ public class BizAiVideoServiceImpl implements BizAiVideoService {
 
         // 3. 保存数据库
         BizAiVideoDO video = BeanUtils.toBean(submitReqVO, BizAiVideoDO.class).setUserId(userId)
+                .setUserType(cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
                 .setStatus(AiImageStatusEnum.IN_PROGRESS.getStatus())
                 .setPlatform(model.getPlatform()).setModel(model.getName())
                 .setWidth(width).setHeight(height);
@@ -138,6 +139,7 @@ public class BizAiVideoServiceImpl implements BizAiVideoService {
         // 3. 插入数据库
         BizAiVideoDO video = BeanUtils.toBean(submitReqVO, BizAiVideoDO.class)
                 .setUserId(userId)
+                .setUserType(cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
                 .setPlatform(model.getPlatform())
                 .setModel(model.getModel())
                 .setWidth(width)

@@ -39,6 +39,12 @@ public class BizAiVideoDO extends BaseDO {
     private Long userId;
 
     /**
+     * 用户类型
+     * 1 管理员 2 会员
+     */
+    private Integer userType;
+
+    /**
      * 提示词
      */
     private String prompt;

@@ -24,6 +24,9 @@ public class AiChatMessageSendRespVO {
         @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "1024")
         private Long id;
 
+        @Schema(description = "对话编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "2048")
+        private Long conversationId;
+
         @Schema(description = "消息类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "role")
         private String type; // 参见 MessageType 枚举类
 

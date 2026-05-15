@@ -64,5 +64,7 @@ public interface ErrorCodeConstants {
     // ========== AI 工作流 1-040-011-000 ==========
     ErrorCode WORKFLOW_NOT_EXISTS = new ErrorCode(1_040_011_000, "工作流不存在");
     ErrorCode WORKFLOW_CODE_EXISTS = new ErrorCode(1_040_011_001, "工作流标识已存在");
+    // ========== AI 积分扣减 1-040-012-000 ==========
+    ErrorCode AI_POINT_NOT_ENOUGH = new ErrorCode(1_040_012_000, "AI 算力积分不足");
 
 }

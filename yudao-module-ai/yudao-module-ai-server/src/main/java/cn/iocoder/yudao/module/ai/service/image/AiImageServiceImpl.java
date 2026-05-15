@@ -106,6 +106,7 @@ public class AiImageServiceImpl implements AiImageService {
 
         // 2. 保存数据库
         AiImageDO image = BeanUtils.toBean(drawReqVO, AiImageDO.class).setUserId(userId)
+                .setUserType(cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
                 .setPlatform(model.getPlatform()).setModelId(model.getId()).setModel(model.getModel())
                 .setPublicStatus(false).setStatus(AiImageStatusEnum.IN_PROGRESS.getStatus());
         imageMapper.insert(image);
@@ -239,6 +240,7 @@ public class AiImageServiceImpl implements AiImageService {
 
         // 2. 保存数据库
         AiImageDO image = BeanUtils.toBean(drawReqVO, AiImageDO.class).setUserId(userId).setPublicStatus(false)
+                .setUserType(cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
                 .setStatus(AiImageStatusEnum.IN_PROGRESS.getStatus())
                 .setPlatform(AiPlatformEnum.MIDJOURNEY.getPlatform()).setModelId(model.getId()).setModel(model.getName());
         imageMapper.insert(image);
@@ -362,6 +364,7 @@ public class AiImageServiceImpl implements AiImageService {
 
         // 3. 新增 image 记录
         AiImageDO newImage = new AiImageDO().setUserId(image.getUserId()).setPublicStatus(false).setPrompt(image.getPrompt())
+                .setUserType(cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
                 .setStatus(AiImageStatusEnum.IN_PROGRESS.getStatus())
                 .setPlatform(AiPlatformEnum.MIDJOURNEY.getPlatform())
                 .setModel(image.getModel()).setWidth(image.getWidth()).setHeight(image.getHeight())
@@ -389,6 +392,7 @@ public class AiImageServiceImpl implements AiImageService {
 
         // 2. 保存数据库
         AiImageDO image = BeanUtils.toBean(drawReqVO, AiImageDO.class).setUserId(userId).setPublicStatus(false)
+                .setUserType(cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
                 .setStatus(AiImageStatusEnum.IN_PROGRESS.getStatus())
                 .setPlatform(AiPlatformEnum.GEMINI.getPlatform()).setModelId(model.getId()).setModel(model.getName());
         imageMapper.insert(image);
@@ -448,6 +452,7 @@ public class AiImageServiceImpl implements AiImageService {
 
         // 2. 保存数据库
         AiImageDO image = BeanUtils.toBean(drawReqVO, AiImageDO.class).setUserId(userId).setPublicStatus(false)
+                .setUserType(cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
                 .setStatus(AiImageStatusEnum.IN_PROGRESS.getStatus())
                 .setPlatform(AiPlatformEnum.GeekAI.getPlatform()).setModelId(model.getId()).setModel(model.getName())
                 .setOptions(cn.hutool.core.bean.BeanUtil.beanToMap(drawReqVO));

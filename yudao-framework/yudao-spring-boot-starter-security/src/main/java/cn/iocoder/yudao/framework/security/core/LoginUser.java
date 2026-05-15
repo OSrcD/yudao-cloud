@@ -16,7 +16,7 @@ import java.util.Map;
  * @author 芋道源码
  */
 @Data
-public class LoginUser {
+public class /**/LoginUser {
 
     public static final String INFO_KEY_NICKNAME = "nickname";
     public static final String INFO_KEY_DEPT_ID = "deptId";

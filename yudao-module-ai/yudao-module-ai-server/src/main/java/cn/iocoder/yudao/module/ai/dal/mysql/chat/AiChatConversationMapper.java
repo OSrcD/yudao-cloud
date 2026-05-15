@@ -18,12 +18,14 @@ import java.util.List;
 public interface AiChatConversationMapper extends BaseMapperX<AiChatConversationDO> {
 
     default List<AiChatConversationDO> selectListByUserId(Long userId) {
-        return selectList(AiChatConversationDO::getUserId, userId);
+        return selectList(AiChatConversationDO::getUserId, userId,
+                AiChatConversationDO::getUserType, cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType());
     }
 
     default List<AiChatConversationDO> selectListByUserIdAndPinned(Long userId, boolean pinned) {
         return selectList(new LambdaQueryWrapperX<AiChatConversationDO>()
                 .eq(AiChatConversationDO::getUserId, userId)
+                .eq(AiChatConversationDO::getUserType, cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
                 .eq(AiChatConversationDO::getPinned, pinned));
     }
 
