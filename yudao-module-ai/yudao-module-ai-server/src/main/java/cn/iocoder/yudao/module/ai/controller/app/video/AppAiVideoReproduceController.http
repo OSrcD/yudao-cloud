@@ -1,0 +1,34 @@
+### 获取视频复刻配置 (获取默认模型等)
+GET {{appApi}}/ai/video/reproduce/get-config
+Authorization: {{token}}
+tenant-id: {{adminTenantId}}
+
+### 提交视频复刻任务 (扣减 10 积分)
+POST {{appApi}}/ai/video/reproduce/create-task
+Authorization: {{token}}
+Content-Type: application/json
+tenant-id: {{adminTenantId}}
+
+{
+  "videoUrl": "http://8.148.177.33:48080/admin-api/infra/file/29/get/20260515/eyJtb2RlbCI6IndhbjIuNi1pMnYiLCJpZCI6IjhhMGU1ZDU3LWE3MTItNDg1Ny1iZjE1LTIzYTVlMzM4MDM4ZSIsImNyZWF0ZWRfYXQiOjE3Nzg3NzM4MTl9channel3245_1778776710157.mp4"
+}
+
+### 获取任务详情及分镜进度
+# 替换 taskId 为上一步返回的 ID
+GET {{appApi}}/ai/video/reproduce/get-task-detail?taskId=1
+Authorization: {{token}}
+tenant-id: {{adminTenantId}}
+
+### 触发单帧洗图 (扣减 5 积分)
+# frameId: 帧 ID (从任务详情中获取)
+# modelId: 67 (gemini-2.5-flash-image)
+POST {{appApi}}/ai/video/reproduce/wash-frame?frameId=1&modelId=67&width=1024&height=1024
+Authorization: {{token}}
+tenant-id: {{adminTenantId}}
+
+### 触发单帧视频生成 (扣减 20 积分)
+# frameId: 帧 ID (从任务详情中获取)
+# modelId: 69 (wan2.6-i2v)
+POST {{appApi}}/ai/video/reproduce/generate-video?frameId=1&modelId=69&width=1024&height=1024
+Authorization: {{token}}
+tenant-id: {{adminTenantId}}
