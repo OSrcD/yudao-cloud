@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iocoder.yudao.module.business.dal.mysql.mapper.BizPromptCommentCompleteMapper">
+
+    <select id="selectCheckList" resultType="cn.iocoder.yudao.module.business.dal.dataobject.BizPromptCommentCompleteDO">
+        SELECT
+            t2.*,
+            t1.comment_content AS commentContent,
+            t3.account_name AS accountName
+        FROM biz_prompt_comment t1
+        JOIN biz_prompt_comment_complete t2 ON t1.id = t2.comment_id
+        LEFT JOIN biz_media_account t3 ON t2.media_account_id = t3.id
+        WHERE t2.check_status = 0
+          AND t1.deleted = 0
+          AND t2.deleted = 0
+        <if test="bo.commentId != null">
+            AND t1.id = #{bo.commentId}
+        </if>
+        <if test="bo.mediaAccountId != null">
+            AND t2.media_account_id = #{bo.mediaAccountId}
+        </if>
+        ORDER BY t2.id DESC
+    </select>
+
+</mapper>

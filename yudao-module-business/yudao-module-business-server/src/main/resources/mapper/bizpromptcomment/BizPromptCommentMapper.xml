@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.iocoder.yudao.module.business.dal.mysql.mapper.BizPromptCommentMapper">
+
+    <select id="selectUnusedList" resultType="cn.iocoder.yudao.module.business.dal.dataobject.BizPromptCommentDO">
+        SELECT
+            t1.*
+        FROM biz_prompt_comment t1
+        LEFT JOIN biz_prompt_template t3 ON t1.prompt_id = t3.id
+        WHERE t1.deleted = 0
+          AND t3.template_type = #{platform}
+          AND t1.id NOT IN (
+              SELECT comment_id 
+              FROM biz_prompt_comment_complete 
+              WHERE media_account_id = #{mediaAccountId} AND deleted = 0
+          )
+        LIMIT 100
+    </select>
+
+    <select id="selectUnusedListByOneGroup" resultType="cn.iocoder.yudao.module.business.dal.dataobject.BizPromptCommentDO">
+        SELECT
+            t1.*
+        FROM biz_prompt_comment t1
+             LEFT JOIN biz_prompt_comment_complete t2_outer ON t1.id = t2_outer.comment_id
+            AND t2_outer.media_account_id = #{mediaAccountId} AND t2_outer.deleted = 0
+        WHERE t1.deleted = 0
+          AND t2_outer.id IS NULL
+          AND t1.operate_group_id = (
+            SELECT tmp.operate_group_id
+            FROM biz_prompt_comment tmp
+                     LEFT JOIN biz_prompt_comment_complete t2 ON tmp.id = t2.comment_id
+                AND t2.media_account_id = #{mediaAccountId} AND t2.deleted = 0
+                     LEFT JOIN biz_prompt_template t3 ON tmp.prompt_id = t3.id
+            WHERE tmp.deleted = 0
+              AND t2.id IS NULL
+              AND t3.template_type = #{platform}
+            LIMIT 1
+            )
+        ORDER BY t1.id ASC
+    </select>
+
+</mapper>
