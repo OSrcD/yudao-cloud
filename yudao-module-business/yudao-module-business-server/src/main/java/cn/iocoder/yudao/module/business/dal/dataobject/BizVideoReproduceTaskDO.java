@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +38,9 @@ public class BizVideoReproduceTaskDO extends BaseDO {
     private String status;
     private String errorMsg;
     private Long conversationId;
+    private Long payOrderId;
+    private Boolean payStatus;
+    private LocalDateTime payTime;
     private String combinedVideoUrl;
     private String remark;
 }

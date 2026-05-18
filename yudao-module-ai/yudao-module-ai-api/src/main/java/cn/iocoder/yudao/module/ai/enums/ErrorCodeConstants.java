@@ -66,5 +66,6 @@ public interface ErrorCodeConstants {
     ErrorCode WORKFLOW_CODE_EXISTS = new ErrorCode(1_040_011_001, "工作流标识已存在");
     // ========== AI 积分扣减 1-040-012-000 ==========
     ErrorCode AI_POINT_NOT_ENOUGH = new ErrorCode(1_040_012_000, "AI 算力积分不足");
+    ErrorCode AI_BALANCE_NOT_ENOUGH = new ErrorCode(1_040_012_001, "账户余额不足，请先充值");
 
 }

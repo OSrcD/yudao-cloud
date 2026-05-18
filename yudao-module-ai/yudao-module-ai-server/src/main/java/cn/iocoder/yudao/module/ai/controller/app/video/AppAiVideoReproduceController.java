@@ -2,10 +2,13 @@ package cn.iocoder.yudao.module.ai.controller.app.video;
 
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 
+import cn.iocoder.yudao.module.ai.controller.app.video.vo.AppAiVideoReproduceCreateRespVO;
 import cn.iocoder.yudao.module.ai.controller.app.video.vo.AppAiVideoReproduceReqVO;
 import cn.iocoder.yudao.module.ai.service.video.BizAiVideoReproduceService;
+import cn.iocoder.yudao.module.pay.api.notify.dto.PayOrderNotifyReqDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.PermitAll;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,10 +29,17 @@ public class AppAiVideoReproduceController {
 
     @PostMapping("/create-task")
     @Operation(summary = "提交视频复刻任务")
-    public CommonResult<Long> createTask(@Valid @RequestBody AppAiVideoReproduceReqVO reqVO) {
-//        Long taskId = aiVideoReproduceService.createTask(getLoginUserId(), reqVO);
-        Long taskId = aiVideoReproduceService.createTask(285L, reqVO);
-        return success(taskId);
+    public CommonResult<AppAiVideoReproduceCreateRespVO> createTask(@Valid @RequestBody AppAiVideoReproduceReqVO reqVO) {
+        return success(aiVideoReproduceService.createTask(getLoginUserId(), reqVO));
+    }
+
+    @PostMapping("/update-paid")
+    @Operation(summary = "更新视频复刻任务为已支付")
+    @PermitAll
+    public CommonResult<Boolean> updateTaskPaid(@RequestBody PayOrderNotifyReqDTO notifyReqDTO) {
+        aiVideoReproduceService.updateTaskPaid(Long.valueOf(notifyReqDTO.getMerchantOrderId()),
+                notifyReqDTO.getPayOrderId());
+        return success(true);
     }
     @PostMapping("/wash-frame")
     @Operation(summary = "触发单帧洗图")
@@ -62,5 +72,13 @@ public class AppAiVideoReproduceController {
 
     public CommonResult<cn.iocoder.yudao.module.ai.controller.app.video.vo.AppAiVideoReproduceTaskDetailRespVO> getTaskDetail(@RequestParam("taskId") Long taskId) {
         return success(aiVideoReproduceService.getTaskDetail(getLoginUserId(), taskId));
+    }
+
+    @GetMapping("/page")
+    @Operation(summary = "获得视频复刻任务分页")
+    public CommonResult<cn.iocoder.yudao.framework.common.pojo.PageResult<cn.iocoder.yudao.module.ai.controller.app.video.vo.AppAiVideoReproduceTaskDetailRespVO>> getTaskPage(
+            @RequestParam(value = "pageNo", defaultValue = "1") Integer pageNo,
+            @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
+        return success(aiVideoReproduceService.getTaskPage(getLoginUserId(), pageNo, pageSize));
     }
 }

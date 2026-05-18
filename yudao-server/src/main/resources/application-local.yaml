@@ -87,9 +87,9 @@ spring:
 
 xxl:
   job:
-    enabled: false # 是否开启调度中心，默认为 true 开启
+    enabled: true # 是否开启调度中心，默认为 true 开启
     admin:
-      addresses: http://127.0.0.1:9090/xxl-job-admin # 调度中心部署跟地址
+      addresses: http://127.0.0.1:8080/xxl-job-admin # 调度中心部署跟地址
 
 --- #################### 消息队列相关 ####################
 
@@ -187,8 +187,10 @@ wx:
     #    secret: 333ae72f41552af1e998fe1f54e1584a
 #    appid: wx63c280fe3248a3e7 # wenhualian的接口测试号
 #    secret: 6f270509224a7ae1296bbf1c8cb97aed
-    appid: wxc4598c446f8a9cb3 # 测试号（Kongdy 提供的）
-    secret: 4a1a04e07f6a4a0751b39c3064a92c8b
+#    appid: wxc4598c446f8a9cb3 # 测试号（Kongdy 提供的）
+    appid: wxabf669bdbebeaaaa # 测试号（Kongdy 提供的）
+    secret: 4e5267c30f085c87ec06af6af517d181
+#    secret: 4a1a04e07f6a4a0751b39c3064a92c8b
 #    appid: wx66186af0759f47c9 # 测试号（puhui 提供的）
 #    secret: 3218bcbd112cbc614c7264ceb20144ac
     config-storage:
@@ -205,9 +207,12 @@ yudao:
   security:
     mock-enable: true
   pay:
-    order-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/order # 支付渠道的【支付】回调地址
-    refund-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/refund # 支付渠道的【退款】回调地址
-    transfer-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/transfer # 支付渠道的【转账】回调地址
+#    order-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/order # 支付渠道的【支付】回调地址
+#    refund-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/refund # 支付渠道的【退款】回调地址
+#    transfer-notify-url: http://yunai.natapp1.cc/admin-api/pay/notify/transfer # 支付渠道的【转账】回调地址
+    order-notify-url: http://8.148.177.33:48080/admin-api/pay/notify/order # 支付渠道的【支付】回调地址
+    refund-notify-url: http://8.148.177.33:48080/admin-api/pay/notify/refund # 支付渠道的【退款】回调地址
+    transfer-notify-url: http://8.148.177.33:48080/admin-api/pay/notify/transfer # 支付渠道的【转账】回调地址
   access-log: # 访问日志的配置项
     enable: false
   demo: false # 关闭演示模式
