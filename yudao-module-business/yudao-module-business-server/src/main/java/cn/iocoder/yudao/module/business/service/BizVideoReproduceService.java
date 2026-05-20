@@ -164,4 +164,15 @@ public interface BizVideoReproduceService {
      * 分析完成后继续后续工作流
      */
     void continueFullWorkflowAfterAnalysis(Long taskId, String resultJson);
+
+    /**
+     * 阶段性回调（局部回调）后处理
+     */
+    void continueWorkflowAfterPartialAnalysis(Long taskId, String resultJson);
+
+    /**
+     * 第四套回调：接收 units[] 中的生视频提示词，更新已有帧的 i2vPromptEn/Zh
+     */
+    void continueWorkflowAfterI2vPromptAnalysis(Long taskId, String resultJson);
 }
+

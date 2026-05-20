@@ -6,6 +6,9 @@ import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONUtil;
+import cn.hutool.json.JSONObject;
+import java.util.Objects;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
@@ -27,7 +30,6 @@ import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
 import cn.iocoder.yudao.module.ai.framework.ai.core.webserch.AiWebSearchClient;
 import cn.iocoder.yudao.module.ai.framework.ai.core.webserch.AiWebSearchRequest;
 import cn.iocoder.yudao.module.ai.framework.ai.core.webserch.AiWebSearchResponse;
-import cn.iocoder.yudao.module.ai.service.image.AiImageService;
 import cn.iocoder.yudao.module.ai.service.knowledge.AiKnowledgeDocumentService;
 import cn.iocoder.yudao.module.ai.service.knowledge.AiKnowledgeSegmentService;
 import cn.iocoder.yudao.module.ai.service.knowledge.bo.AiKnowledgeSegmentSearchReqBO;
@@ -601,51 +603,155 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
     @Override
     public Flux<CommonResult<AiChatMessageSendRespVO>> analyzeVideoAndGenerateScript(Long userId, String content, List<String> videoUrls,
                                                                               List<String> charImageUrls, List<String> productImageUrls) {
-        // 1. 获取三套提示词角色
-        AiChatRoleDO reverseEngineerRole = CollUtil.getFirst(chatRoleService.getChatRoleListByName("短视频分镜逆向工程师"));
-        AiChatRoleDO rewriterRole = CollUtil.getFirst(chatRoleService.getChatRoleListByName("短视频8秒生成单元无损改写器"));
-        AiChatRoleDO directorRole = CollUtil.getFirst(chatRoleService.getChatRoleListByName("短视频8秒生成单元模板复刻导演"));
+        // 判断是否为裂变模式
+        boolean isFission = (productImageUrls != null && !productImageUrls.isEmpty()) 
+                || (content != null && content.contains("\"reproduceType\":\"fission\""));
 
-        if (reverseEngineerRole == null || rewriterRole == null || directorRole == null) {
-            return Flux.error(exception(ErrorCodeConstants.CHAT_ROLE_NOT_EXISTS));
+        if (isFission) {
+            // 1. 获取6个裂变角色
+            AiChatRoleDO role1 = CollUtil.getFirst(chatRoleService.getChatRoleListByName("短视频裂变前置逆向工程师"));
+            AiChatRoleDO role2 = CollUtil.getFirst(chatRoleService.getChatRoleListByName("爆款裂变规划导演"));
+            AiChatRoleDO role3 = CollUtil.getFirst(chatRoleService.getChatRoleListByName("商品适配裂变改写导演"));
+            AiChatRoleDO role4 = CollUtil.getFirst(chatRoleService.getChatRoleListByName("商品适配裂变改写导演输出格式"));
+            AiChatRoleDO role5 = CollUtil.getFirst(chatRoleService.getChatRoleListByName("裂变生成提示词导演"));
+            AiChatRoleDO role6 = CollUtil.getFirst(chatRoleService.getChatRoleListByName("裂变生成提示词导演输出格式"));
+
+            if (role1 == null || role2 == null || role3 == null || role4 == null || role5 == null || role6 == null) {
+                return Flux.error(exception(ErrorCodeConstants.CHAT_ROLE_NOT_EXISTS));
+            }
+
+            // 2. 创建对话 (使用第一个角色 ID)
+            Long conversationId = chatConversationService.createChatConversationMy(
+                    new AiChatConversationCreateMyReqVO().setRoleId(role1.getId()), userId);
+
+            // Step 1: 前置逆向工程
+            AiChatMessageSendReqVO req1 = new AiChatMessageSendReqVO()
+                    .setConversationId(conversationId)
+                    .setContent("")
+                    .setAttachmentUrls(videoUrls)
+                    .setUseContext(true)
+                    .setIsAnalysis(true);
+
+            // Step 2: 爆款裂变规划导演
+            String systemMessage2 = role2.getSystemMessage();
+            if (StrUtil.isNotEmpty(content) && JSONUtil.isTypeJSON(content)) {
+                JSONObject configObj = JSONUtil.parseObj(content);
+                systemMessage2 = systemMessage2
+                    .replace("model_name: [填写]", "model_name: " + Objects.toString(configObj.getStr("modelName"), Objects.toString(configObj.getStr("model_name"), "")))
+                    .replace("max_unit_duration_sec（单次最长时长上限 L）: [填写]", "max_unit_duration_sec（单次最长时长上限 L）: " + Objects.toString(configObj.getStr("maxUnitDurationSec"), Objects.toString(configObj.getStr("max_unit_duration_sec"), "")))
+                    .replace("fixed_length_only（true / false）: [填写]", "fixed_length_only（true / false）: " + Objects.toString(configObj.getStr("fixedLengthOnly"), Objects.toString(configObj.getStr("fixed_length_only"), "")))
+                    .replace("supports_custom_duration_under_max（true / false）: [填写]", "supports_custom_duration_under_max（true / false）: " + Objects.toString(configObj.getStr("supportsCustomDurationUnderMax"), Objects.toString(configObj.getStr("supports_custom_duration_under_max"), "")));
+            }
+
+            AiChatMessageSendReqVO req2 = new AiChatMessageSendReqVO()
+                    .setConversationId(conversationId)
+                    .setContent(systemMessage2)
+                    .setUseContext(true)
+                    .setIsAnalysis(true);
+
+            // Step 3: 商品适配裂变改写导演
+            String systemMessage3 = role3.getSystemMessage();
+            if (StrUtil.isNotEmpty(content) && JSONUtil.isTypeJSON(content)) {
+                JSONObject configObj = JSONUtil.parseObj(content);
+                systemMessage3 = systemMessage3
+                    .replace("品类: [填写]", "品类: " + Objects.toString(configObj.getStr("category"), Objects.toString(configObj.getStr("品类"), "")))
+                    .replace("卖点: [填写]", "卖点: " + Objects.toString(configObj.getStr("sellingPoints"), Objects.toString(configObj.getStr("卖点"), "")))
+                    .replace("价格: [填写]", "价格: " + Objects.toString(configObj.getStr("price"), Objects.toString(configObj.getStr("价格"), "")))
+                    .replace("优惠: [填写]", "优惠: " + Objects.toString(configObj.getStr("discounts"), Objects.toString(configObj.getStr("优惠"), "")))
+                    .replace("规格: [填写]", "规格: " + Objects.toString(configObj.getStr("specifications"), Objects.toString(configObj.getStr("规格"), "")))
+                    .replace("适用人群: [填写]", "适用人群: " + Objects.toString(configObj.getStr("targetUsers"), Objects.toString(configObj.getStr("适用人群"), "")))
+                    .replace("禁区: [填写]", "禁区: " + Objects.toString(configObj.getStr("forbidden"), Objects.toString(configObj.getStr("禁区"), "")))
+                    .replace("其他: [填写]", "其他: " + Objects.toString(configObj.getStr("others"), Objects.toString(configObj.getStr("其他"), "")));
+            }
+
+            List<String> allImageUrls = new ArrayList<>();
+            if (charImageUrls != null) allImageUrls.addAll(charImageUrls);
+            if (productImageUrls != null) allImageUrls.addAll(productImageUrls);
+
+            AiChatMessageSendReqVO req3 = new AiChatMessageSendReqVO()
+                    .setConversationId(conversationId)
+                    .setContent(systemMessage3)
+                    .setAttachmentUrls(allImageUrls)
+                    .setUseContext(true)
+                    .setIsAnalysis(true);
+
+            // Step 4: 商品适配裂变改写导演输出格式
+            AiChatMessageSendReqVO req4 = new AiChatMessageSendReqVO()
+                    .setConversationId(conversationId)
+                    .setContent(role4.getSystemMessage())
+                    .setUseContext(true)
+                    .setIsAnalysis(true)
+                    .setResponseFormat("json_object");
+
+            // Step 5: 裂变生成提示词导演
+            AiChatMessageSendReqVO req5 = new AiChatMessageSendReqVO()
+                    .setConversationId(conversationId)
+                    .setContent(role5.getSystemMessage())
+                    .setUseContext(true)
+                    .setIsAnalysis(true);
+
+            // Step 6: 裂变生成提示词导演输出格式
+            AiChatMessageSendReqVO req6 = new AiChatMessageSendReqVO()
+                    .setConversationId(conversationId)
+                    .setContent(role6.getSystemMessage())
+                    .setUseContext(true)
+                    .setIsAnalysis(true)
+                    .setResponseFormat("json_object");
+
+            // 3. 连环调用：使用 concatWith 确保顺序执行
+            return sendChatMessageStream(req1, userId)
+                    .concatWith(Flux.defer(() -> sendChatMessageStream(req2, userId)))
+                    .concatWith(Flux.defer(() -> sendChatMessageStream(req3, userId)))
+                    .concatWith(Flux.defer(() -> sendChatMessageStream(req4, userId)))
+                    .concatWith(Flux.defer(() -> sendChatMessageStream(req5, userId)))
+                    .concatWith(Flux.defer(() -> sendChatMessageStream(req6, userId)));
+        } else {
+            // 1. 获取三套提示词角色
+            AiChatRoleDO reverseEngineerRole = CollUtil.getFirst(chatRoleService.getChatRoleListByName("短视频分镜逆向工程师"));
+            AiChatRoleDO rewriterRole = CollUtil.getFirst(chatRoleService.getChatRoleListByName("短视频8秒生成单元无损改写器"));
+            AiChatRoleDO directorRole = CollUtil.getFirst(chatRoleService.getChatRoleListByName("短视频8秒生成单元模板复刻导演"));
+
+            if (reverseEngineerRole == null || rewriterRole == null || directorRole == null) {
+                return Flux.error(exception(ErrorCodeConstants.CHAT_ROLE_NOT_EXISTS));
+            }
+
+            // 2. 创建对话 (使用第一个角色 ID)
+            Long conversationId = chatConversationService.createChatConversationMy(
+                    new AiChatConversationCreateMyReqVO().setRoleId(reverseEngineerRole.getId()), userId);
+
+            // Step 1: 逆向工程分析
+            AiChatMessageSendReqVO req1 = new AiChatMessageSendReqVO()
+                    .setConversationId(conversationId)
+                    .setContent("")
+                    .setAttachmentUrls(videoUrls)
+                    .setUseContext(true)
+                    .setIsAnalysis(true);
+
+            // Step 2: 无损改写
+            AiChatMessageSendReqVO req2 = new AiChatMessageSendReqVO()
+                    .setConversationId(conversationId)
+                    .setContent(rewriterRole.getSystemMessage())
+                    .setUseContext(true)
+                    .setIsAnalysis(true);
+
+            // Step 3: 模板复刻导演生成 JSON
+            List<String> allImageUrls = new ArrayList<>();
+            if (charImageUrls != null) allImageUrls.addAll(charImageUrls);
+            if (productImageUrls != null) allImageUrls.addAll(productImageUrls);
+
+            AiChatMessageSendReqVO req3 = new AiChatMessageSendReqVO()
+                    .setConversationId(conversationId)
+                    .setContent(directorRole.getSystemMessage())
+                    .setAttachmentUrls(allImageUrls)
+                    .setUseContext(true)
+                    .setIsAnalysis(true)
+                    .setResponseFormat("json_object");
+
+            // 3. 连环调用：使用 concatWith 确保顺序执行
+            return sendChatMessageStream(req1, userId)
+                    .concatWith(Flux.defer(() -> sendChatMessageStream(req2, userId)))
+                    .concatWith(Flux.defer(() -> sendChatMessageStream(req3, userId)));
         }
-
-        // 2. 创建对话 (使用第一个角色 ID)
-        Long conversationId = chatConversationService.createChatConversationMy(
-                new AiChatConversationCreateMyReqVO().setRoleId(reverseEngineerRole.getId()), userId);
-
-        // Step 1: 逆向工程分析
-        AiChatMessageSendReqVO req1 = new AiChatMessageSendReqVO()
-                .setConversationId(conversationId)
-                .setContent("")
-                .setAttachmentUrls(videoUrls)
-                .setUseContext(true)
-                .setIsAnalysis(true);
-
-        // Step 2: 无损改写
-        AiChatMessageSendReqVO req2 = new AiChatMessageSendReqVO()
-                .setConversationId(conversationId)
-                .setContent(rewriterRole.getSystemMessage())
-                .setUseContext(true)
-                .setIsAnalysis(true);
-
-        // Step 3: 模板复刻导演生成 JSON
-        List<String> allImageUrls = new ArrayList<>();
-        if (charImageUrls != null) allImageUrls.addAll(charImageUrls);
-        if (productImageUrls != null) allImageUrls.addAll(productImageUrls);
-
-        AiChatMessageSendReqVO req3 = new AiChatMessageSendReqVO()
-                .setConversationId(conversationId)
-                .setContent(directorRole.getSystemMessage())
-                .setAttachmentUrls(allImageUrls)
-                .setUseContext(true)
-                .setIsAnalysis(true)
-                .setResponseFormat("json_object");
-
-        // 3. 连环调用：使用 concatWith 确保顺序执行
-        return sendChatMessageStream(req1, userId)
-                .concatWith(Flux.defer(() -> sendChatMessageStream(req2, userId)))
-                .concatWith(Flux.defer(() -> sendChatMessageStream(req3, userId)));
     }
 
 

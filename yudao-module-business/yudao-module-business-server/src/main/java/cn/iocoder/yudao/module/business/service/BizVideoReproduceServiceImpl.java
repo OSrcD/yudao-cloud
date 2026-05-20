@@ -135,10 +135,14 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
             params.put("videoUrl", task.getOriginalVideoUrl());
 
             ArrayNode charArray = params.putArray("charUrls");
-            task.getCharImages().forEach(charArray::add);
+            if (task.getCharImages() != null) {
+                task.getCharImages().forEach(charArray::add);
+            }
 
             ArrayNode prodArray = params.putArray("productUrls");
-            task.getProductImages().forEach(prodArray::add);
+            if (task.getProductImages() != null) {
+                task.getProductImages().forEach(prodArray::add);
+            }
 
             ArrayNode promptsArray = params.putArray("prompts");
             prompts.forEach(promptsArray::add);
@@ -234,10 +238,14 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                 templates.put("restyle", geminiVideoService.getImageWashRestyleTemplate());
                 
                 ArrayNode charArray = params.putArray("charUrls");
-                task.getCharImages().forEach(charArray::add);
+                if (task.getCharImages() != null) {
+                    task.getCharImages().forEach(charArray::add);
+                }
 
                 ArrayNode prodArray = params.putArray("productUrls");
-                task.getProductImages().forEach(prodArray::add);
+                if (task.getProductImages() != null) {
+                    task.getProductImages().forEach(prodArray::add);
+                }
 
                 if (refImages != null) {
                     ArrayNode extraArray = params.putArray("extraMaterials");
@@ -776,19 +784,119 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
     public void continueFullWorkflowAfterAnalysis(Long taskId, String resultJson) {
         try {
             JsonNode root = objectMapper.readTree(resultJson);
-            JsonNode globalLockNode = root.path("global_lock_card");
-
             BizVideoReproduceTaskDO task = taskMapper.selectById(taskId);
             task.setResultJson(resultJson);
-            if (!globalLockNode.isMissingNode() && !globalLockNode.isNull()) {
-                task.setGlobalLocks(objectMapper.convertValue(globalLockNode, new TypeReference<Map<String, Object>>() {}));
-            }
-            task.setStatus("2");
-            taskMapper.updateById(task);
 
-            updateTaskStatus(taskId, "2", "正在截取关键帧...");
+            boolean isFission = (task.getProductImages() != null && !task.getProductImages().isEmpty());
 
-            JsonNode guPrompts = root.path("gu_prompts");
+            if (isFission) {
+                JsonNode globalLockNode = root.path("global_lock_card");
+                if (!globalLockNode.isMissingNode() && !globalLockNode.isNull()) {
+                    task.setGlobalLocks(objectMapper.convertValue(globalLockNode, new TypeReference<Map<String, Object>>() {}));
+                }
+                task.setStatus("2");
+                taskMapper.updateById(task);
+
+                updateTaskStatus(taskId, "2", "正在更新分镜帧提示词...");
+
+                JsonNode units = root.path("units");
+                JsonNode gridSuggestions = root.path("grid_suggestions");
+                if (units.isMissingNode() || !units.isArray()) {
+                    updateTaskStatus(taskId, "9", "JSON 结构不正确: 缺失 units 数组");
+                    return;
+                }
+
+                List<String> productImages = task.getProductImages();
+                int index = 0;
+
+                for (JsonNode unit : units) {
+                    String unitId = unit.path("unit_id").asText();
+
+                    String i2vPromptEn = unit.path("i2v_prompt_for_model_en").isContainerNode()
+                            ? unit.path("i2v_prompt_for_model_en").path("visual_dialogue_sfx").asText()
+                            : unit.path("i2v_prompt_for_model_en").asText();
+                    String i2vPromptZh = unit.path("i2v_prompt_zh_check").isContainerNode()
+                            ? unit.path("i2v_prompt_zh_check").path("visual_dialogue_sfx").asText()
+                            : unit.path("i2v_prompt_zh_check").asText();
+
+                    // 尝试在已有的分镜中查找
+                    BizVideoReproduceFrameDO frameDO = frameMapper.selectOne(
+                            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BizVideoReproduceFrameDO>()
+                                    .eq(BizVideoReproduceFrameDO::getTaskId, taskId)
+                                    .eq(BizVideoReproduceFrameDO::getGuId, unitId)
+                    );
+
+                    boolean isNew = false;
+                    if (frameDO == null) {
+                        frameDO = new BizVideoReproduceFrameDO();
+                        frameDO.setTaskId(taskId);
+                        frameDO.setGuId(unitId);
+                        frameDO.setFrameIndex(index++);
+                        frameDO.setTimestampSec("0");
+                        frameDO.setStatus("0");
+                        isNew = true;
+                    }
+
+                    frameDO.setI2vPromptEn(i2vPromptEn);
+                    frameDO.setI2vPromptZh(i2vPromptZh);
+
+                    String gridImagePromptEn = "";
+                    String gridImagePromptZh = "";
+                    List<String> gridSourceImages = new ArrayList<>();
+
+                    if (gridSuggestions != null && gridSuggestions.isArray()) {
+                        for (JsonNode suggestion : gridSuggestions) {
+                            if (unitId.equals(suggestion.path("unit_id").asText())) {
+                                gridImagePromptEn = suggestion.path("image_prompt_for_model_en").isContainerNode()
+                                        ? suggestion.path("image_prompt_for_model_en").path("visual_dialogue_sfx").asText()
+                                        : suggestion.path("image_prompt_for_model_en").asText();
+                                gridImagePromptZh = suggestion.path("image_prompt_zh_check").isContainerNode()
+                                        ? suggestion.path("image_prompt_zh_check").path("visual_dialogue_sfx").asText()
+                                        : suggestion.path("image_prompt_zh_check").asText();
+
+                                JsonNode indicesNode = suggestion.path("source_image_indices");
+                                if (indicesNode.isArray() && productImages != null) {
+                                    for (JsonNode indexNode : indicesNode) {
+                                        int rawIdx = indexNode.asInt();
+                                        int imgIdx = rawIdx - 1; // 1-based to 0-based
+                                        if (imgIdx >= 0 && imgIdx < productImages.size()) {
+                                            gridSourceImages.add(productImages.get(imgIdx));
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isNew || frameDO.getGridImagePromptEn() == null || frameDO.getGridImagePromptEn().isEmpty()) {
+                        frameDO.setGridImagePromptEn(gridImagePromptEn);
+                        frameDO.setGridImagePromptZh(gridImagePromptZh);
+                        frameDO.setGridSourceImages(gridSourceImages);
+                        if (!gridSourceImages.isEmpty()) {
+                            frameDO.setOriginalImageUrl(gridSourceImages.get(0));
+                        }
+                    }
+
+                    if (isNew) {
+                        frameMapper.insert(frameDO);
+                    } else {
+                        frameMapper.updateById(frameDO);
+                    }
+                }
+
+                updateTaskStatus(taskId, "3", "分析完成");
+            } else {
+                JsonNode globalLockNode = root.path("global_lock_card");
+                if (!globalLockNode.isMissingNode() && !globalLockNode.isNull()) {
+                    task.setGlobalLocks(objectMapper.convertValue(globalLockNode, new TypeReference<Map<String, Object>>() {}));
+                }
+                task.setStatus("2");
+                taskMapper.updateById(task);
+
+                updateTaskStatus(taskId, "2", "正在截取关键帧...");
+
+                JsonNode guPrompts = root.path("gu_prompts");
             if (guPrompts.isArray()) {
                 File tempVideo = saveToTemp(task.getOriginalVideoUrl());
                 try {
@@ -817,7 +925,7 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                         frameDO.setTimestampSec(String.valueOf(timestamp));
                         frameDO.setOriginalImageUrl(frameUrl);
                         frameDO.setStatus("1");
-                        
+
                         // 组合提示词
                         frameDO.setI2vPromptEn(composeFinalI2vPrompt(task, frameDO, root));
                         frameDO.setI2vPromptZh(composeFinalI2vPromptZh(frameDO, root));
@@ -830,11 +938,155 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                 }
             }
             updateTaskStatus(taskId, "3", "分析完成");
+            }
         } catch (Exception e) {
             log.error("后续处理失败", e);
             updateTaskStatus(taskId, "9", "处理失败: " + e.getMessage());
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void continueWorkflowAfterPartialAnalysis(Long taskId, String resultJson) {
+        log.info("开始处理局部任务分析结果, taskId: {}", taskId);
+        try {
+            BizVideoReproduceTaskDO task = taskMapper.selectById(taskId);
+            if (task == null) {
+                log.error("任务不存在, taskId: {}", taskId);
+                return;
+            }
+
+            // 更新任务的局部结果
+            task.setResultJson(resultJson);
+
+            JsonNode root = objectMapper.readTree(resultJson);
+            JsonNode globalLockNode = root.path("global_lock_card");
+            if (!globalLockNode.isMissingNode() && !globalLockNode.isNull()) {
+                task.setGlobalLocks(objectMapper.convertValue(globalLockNode, new TypeReference<Map<String, Object>>() {}));
+            }
+            task.setStatus("2"); // 精修创作中，不过我们为了让用户能立刻进入工作台，在创建完分镜帧后会更新为 3
+            taskMapper.updateById(task);
+
+            updateTaskStatus(taskId, "2", "正在生成阶段分镜帧...");
+
+            JsonNode gridSuggestions = root.path("grid_suggestions");
+            if (gridSuggestions.isMissingNode() || !gridSuggestions.isArray()) {
+                updateTaskStatus(taskId, "9", "JSON 结构不正确: 缺失 grid_suggestions 数组");
+                return;
+            }
+
+
+            List<String> productImages = task.getProductImages();
+            int index = 0;
+            // 先删除旧帧
+            frameMapper.delete(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BizVideoReproduceFrameDO>()
+                    .eq(BizVideoReproduceFrameDO::getTaskId, taskId));
+
+            for (JsonNode suggestion : gridSuggestions) {
+                String unitId = suggestion.path("unit_id").asText();
+
+                // 第三套：宫格图提示词
+                String gridImagePromptEn = suggestion.path("image_prompt_for_model_en").isContainerNode()
+                        ? suggestion.path("image_prompt_for_model_en").path("visual_dialogue_sfx").asText()
+                        : suggestion.path("image_prompt_for_model_en").asText();
+                String gridImagePromptZh = suggestion.path("image_prompt_zh_check").isContainerNode()
+                        ? suggestion.path("image_prompt_zh_check").path("visual_dialogue_sfx").asText()
+                        : suggestion.path("image_prompt_zh_check").asText();
+
+                // 第三套回调时 i2vPrompt 留空，第四套单独回调再填充
+                String i2vPromptEn = "";
+                String i2vPromptZh = "";
+
+                List<String> gridSourceImages = new ArrayList<>();
+                JsonNode indicesNode = suggestion.path("source_image_indices");
+                if (indicesNode.isArray() && productImages != null) {
+                    for (JsonNode indexNode : indicesNode) {
+                        int rawIdx = indexNode.asInt();
+                        // 1-based index 映射到 0-based index
+                        int imgIdx = rawIdx - 1;
+                        if (imgIdx >= 0 && imgIdx < productImages.size()) {
+                            gridSourceImages.add(productImages.get(imgIdx));
+                        }
+                    }
+                }
+
+                BizVideoReproduceFrameDO frameDO = new BizVideoReproduceFrameDO();
+                frameDO.setTaskId(taskId);
+                frameDO.setGuId(unitId);
+                frameDO.setFrameIndex(index++);
+                frameDO.setTimestampSec("0");
+
+                if (!gridSourceImages.isEmpty()) {
+                    frameDO.setOriginalImageUrl(gridSourceImages.get(0));
+                }
+
+                frameDO.setI2vPromptEn(i2vPromptEn);
+                frameDO.setI2vPromptZh(i2vPromptZh);
+
+                frameDO.setGridImagePromptEn(gridImagePromptEn);
+                frameDO.setGridImagePromptZh(gridImagePromptZh);
+                frameDO.setGridSourceImages(gridSourceImages);
+
+                frameDO.setStatus("0");
+                frameMapper.insert(frameDO);
+            }
+
+            // 更新任务状态为“3（分析完成）”，使用户可以立刻点进去进行创作
+            updateTaskStatus(taskId, "3", "分析完成");
+        } catch (Exception e) {
+            log.error("局部处理失败", e);
+            updateTaskStatus(taskId, "9", "局部处理失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void continueWorkflowAfterI2vPromptAnalysis(Long taskId, String resultJson) {
+        log.info("[第四套回调] 开始处理生视频提示词, taskId={}", taskId);
+        try {
+            JsonNode root = objectMapper.readTree(resultJson);
+            JsonNode unitsNode = root.path("units");
+            if (unitsNode.isMissingNode() || !unitsNode.isArray()) {
+                log.warn("[第四套回调] taskId={} JSON 缺失 units 数组，跳过", taskId);
+                return;
+            }
+
+            int updated = 0;
+            for (JsonNode unit : unitsNode) {
+                String unitId = unit.path("unit_id").asText();
+                if (unitId.isEmpty()) continue;
+
+                String i2vPromptEn = unit.path("i2v_prompt_for_model_en").isContainerNode()
+                        ? unit.path("i2v_prompt_for_model_en").path("visual_dialogue_sfx").asText()
+                        : unit.path("i2v_prompt_for_model_en").asText();
+                String i2vPromptZh = unit.path("i2v_prompt_zh_check").isContainerNode()
+                        ? unit.path("i2v_prompt_zh_check").path("visual_dialogue_sfx").asText()
+                        : unit.path("i2v_prompt_zh_check").asText();
+
+                // 按 taskId + unit_id 查找已有的帧（第三套回调已建好）
+                BizVideoReproduceFrameDO frameDO = frameMapper.selectOne(
+                        new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<BizVideoReproduceFrameDO>()
+                                .eq(BizVideoReproduceFrameDO::getTaskId, taskId)
+                                .eq(BizVideoReproduceFrameDO::getGuId, unitId)
+                );
+
+                if (frameDO == null) {
+                    log.warn("[第四套回调] taskId={} unitId={} 未找到已有帧，跳过", taskId, unitId);
+                    continue;
+                }
+
+                frameDO.setI2vPromptEn(i2vPromptEn);
+                frameDO.setI2vPromptZh(i2vPromptZh);
+                frameMapper.updateById(frameDO);
+                updated++;
+                log.info("[第四套回调] taskId={} unitId={} i2vPromptEn长度={} 更新成功", taskId, unitId, i2vPromptEn.length());
+            }
+            log.info("[第四套回调] taskId={} 共更新 {} 帧的生视频提示词", taskId, updated);
+        } catch (Exception e) {
+            log.error("[第四套回调] taskId={} 处理失败", taskId, e);
+        }
+    }
+
 
     private String composeFinalI2vPrompt(BizVideoReproduceTaskDO task, BizVideoReproduceFrameDO frame, JsonNode root) {
         StringBuilder sb = new StringBuilder();

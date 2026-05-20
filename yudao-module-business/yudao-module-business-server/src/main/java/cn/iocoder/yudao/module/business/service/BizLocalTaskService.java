@@ -75,5 +75,11 @@ public interface BizLocalTaskService {
      */
     void completeTask(Long taskId, boolean success, String resultData, String errorMsg);
 
+    /**
+     * 阶段性部分完成任务回调
+     */
+    void partialCompleteTask(Long taskId, String resultData);
+
 }
+
 

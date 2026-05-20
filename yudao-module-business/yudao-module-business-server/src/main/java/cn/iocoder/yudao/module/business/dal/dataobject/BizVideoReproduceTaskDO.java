@@ -43,4 +43,9 @@ public class BizVideoReproduceTaskDO extends BaseDO {
     private LocalDateTime payTime;
     private String combinedVideoUrl;
     private String remark;
+    /**
+     * 执行模式
+     */
+    private String execMode;
 }
+

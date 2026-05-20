@@ -83,4 +83,12 @@ public class BizLocalTaskController {
         return success(true);
     }
 
+    @PostMapping("/partial-complete")
+    @Operation(summary = "本地任务部分完成回调")
+    @PermitAll
+    public CommonResult<Boolean> partialCompleteTask(@Valid @RequestBody BizLocalTaskCompleteReqVO reqVO) {
+        localTaskService.partialCompleteTask(reqVO.getTaskId(), reqVO.getResultData());
+        return success(true);
+    }
+
 }

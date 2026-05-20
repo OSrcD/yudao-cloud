@@ -56,8 +56,9 @@ public class AppAiVideoReproduceController {
     public CommonResult<Boolean> generateVideo(@RequestParam("frameId") Long frameId,
                                              @RequestParam("modelId") Long modelId,
                                              @RequestParam("width") Integer width,
-                                             @RequestParam("height") Integer height) {
-        aiVideoReproduceService.generateVideo(getLoginUserId(), frameId, modelId, width, height);
+                                             @RequestParam("height") Integer height,
+                                             @RequestParam(value = "inputReference", required = false) String inputReference) {
+        aiVideoReproduceService.generateVideo(getLoginUserId(), frameId, modelId, width, height, inputReference);
         return success(true);
     }
 

@@ -46,4 +46,19 @@ public class BizVideoReproduceFrameDO extends BaseDO {
     private String audioUrl;
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> audioConfigJson;
+
+    /**
+     * 宫格生图英文提示词
+     */
+    private String gridImagePromptEn;
+    /**
+     * 宫格生图中文提示词
+     */
+    private String gridImagePromptZh;
+    /**
+     * 关联的引用商品原图列表
+     */
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> gridSourceImages;
 }
+

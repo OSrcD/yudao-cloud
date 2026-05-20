@@ -193,4 +193,36 @@ public class BizLocalTaskServiceImpl implements BizLocalTaskService {
         });
     }
 
+    @Override
+    public void partialCompleteTask(Long taskId, String resultData) {
+        BizLocalTaskDO localTask = localTaskMapper.selectById(taskId);
+        if (localTask == null) {
+            return;
+        }
+
+        // 局部上报，更新中间结果数据
+        localTask.setResultData(JsonUtils.parseObject(resultData, Map.class));
+        localTaskMapper.updateById(localTask);
+
+        TenantUtils.execute(localTask.getTenantId(), () -> {
+            if ("ANALYZE_VIDEO".equals(localTask.getTaskType())) {
+                try {
+                    BizVideoReproduceService videoReproduceService = applicationContext.getBean(BizVideoReproduceService.class);
+                    // 根据 JSON 内容路由：第三套含 grid_suggestions，第四套含 units
+                    JsonNode root = objectMapper.readTree(resultData);
+                    if (!root.path("units").isMissingNode()) {
+                        // 第四套回调：生视频提示词
+                        videoReproduceService.continueWorkflowAfterI2vPromptAnalysis(localTask.getRefTaskId(), resultData);
+                    } else {
+                        // 第三套回调：宫格图提示词 + 建帧
+                        videoReproduceService.continueWorkflowAfterPartialAnalysis(localTask.getRefTaskId(), resultData);
+                    }
+                } catch (Exception e) {
+                    log.error("处理 ANALYZE_VIDEO 局部回调异常", e);
+                }
+            }
+        });
+    }
+
 }
+
