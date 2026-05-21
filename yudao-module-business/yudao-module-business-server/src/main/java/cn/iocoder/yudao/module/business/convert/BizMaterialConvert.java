@@ -1,7 +1,5 @@
 package cn.iocoder.yudao.module.business.convert;
 
-import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
-
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.business.controller.admin.vo.BizMaterialSaveReqVO;
 import cn.iocoder.yudao.module.business.dal.dataobject.BizMaterialDO;

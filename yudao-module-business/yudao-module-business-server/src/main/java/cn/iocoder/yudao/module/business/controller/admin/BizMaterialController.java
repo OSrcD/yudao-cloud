@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.business.controller.admin;
 
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
 import cn.iocoder.yudao.module.business.controller.admin.vo.BizMaterialPageReqVO;
 import cn.iocoder.yudao.module.business.controller.admin.vo.BizMaterialSaveReqVO;
 import cn.iocoder.yudao.module.business.dal.dataobject.BizMaterialDO;
@@ -31,6 +32,12 @@ public class BizMaterialController {
     @Operation(summary = "创建素材")
     @PreAuthorize("@ss.hasPermission('business:material:create')")
     public CommonResult<Long> createMaterial(@Valid @RequestBody BizMaterialSaveReqVO createReqVO) {
+        if (createReqVO.getUserId() == null) {
+            createReqVO.setUserId(SecurityFrameworkUtils.getLoginUserId());
+        }
+        if (createReqVO.getUserType() == null && SecurityFrameworkUtils.getLoginUser() != null) {
+            createReqVO.setUserType(SecurityFrameworkUtils.getLoginUser().getUserType());
+        }
         return success(materialService.createMaterial(createReqVO));
     }
 

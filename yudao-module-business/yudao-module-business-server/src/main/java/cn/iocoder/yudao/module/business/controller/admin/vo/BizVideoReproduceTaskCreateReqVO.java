@@ -23,4 +23,10 @@ public class BizVideoReproduceTaskCreateReqVO {
     @Schema(description = "执行模式")
     private String execMode;
 
+    @Schema(description = "用户编号")
+    private Long userId;
+
+    @Schema(description = "用户类型")
+    private Integer userType;
+
 }

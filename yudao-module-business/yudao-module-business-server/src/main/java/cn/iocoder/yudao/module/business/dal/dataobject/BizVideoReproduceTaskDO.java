@@ -25,6 +25,8 @@ public class BizVideoReproduceTaskDO extends BaseDO {
     @TableId(type = IdType.AUTO)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
+    private Long userId;
+    private Integer userType;
     private String originalVideoUrl;
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Map<String, Object> productConfigJson;

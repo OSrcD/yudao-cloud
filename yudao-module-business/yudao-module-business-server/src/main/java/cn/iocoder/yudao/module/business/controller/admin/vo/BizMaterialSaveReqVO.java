@@ -12,6 +12,12 @@ public class BizMaterialSaveReqVO {
     @Schema(description = "素材ID")
     private Long id;
 
+    @Schema(description = "用户编号")
+    private Long userId;
+
+    @Schema(description = "用户类型")
+    private Integer userType;
+
     @Schema(description = "素材名称")
     private String materialName;
 

@@ -13,6 +13,7 @@ public class BizVideoReproduceFrameDTO {
     private String timestampSec;
     private String originalImageUrl;
     private String polishedImageUrl;
+    private String generatedVideoUrl;
     private String resultVideoUrl;
     private String status;
     private String aiImageId;

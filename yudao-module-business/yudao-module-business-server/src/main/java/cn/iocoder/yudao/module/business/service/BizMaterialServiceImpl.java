@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.business.service;
 
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils;
 import cn.iocoder.yudao.module.business.controller.admin.vo.BizMaterialPageReqVO;
 import cn.iocoder.yudao.module.business.controller.admin.vo.BizMaterialSaveReqVO;
 import cn.iocoder.yudao.module.business.convert.BizMaterialConvert;
@@ -25,16 +26,19 @@ public class BizMaterialServiceImpl implements BizMaterialService {
 
     @Override
     public Long createMaterial(BizMaterialSaveReqVO createReqVO) {
-        // 插入
         BizMaterialDO material = BizMaterialConvert.INSTANCE.convert(createReqVO);
+        if (material.getUserId() == null) {
+            material.setUserId(SecurityFrameworkUtils.getLoginUserId());
+        }
+        if (material.getUserType() == null && SecurityFrameworkUtils.getLoginUser() != null) {
+            material.setUserType(SecurityFrameworkUtils.getLoginUser().getUserType());
+        }
         materialMapper.insert(material);
-        // 返回
         return material.getId();
     }
 
     @Override
     public void updateMaterial(BizMaterialSaveReqVO updateReqVO) {
-        // 更新
         BizMaterialDO updateObj = BizMaterialConvert.INSTANCE.convert(updateReqVO);
         materialMapper.updateById(updateObj);
     }

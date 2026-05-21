@@ -27,6 +27,16 @@ public class BizMaterialDO extends BaseDO {
     private Long id;
 
     /**
+     * 素材所属用户编号
+     */
+    private Long userId;
+
+    /**
+     * 素材所属用户类型
+     */
+    private Integer userType;
+
+    /**
      * 素材名称
      */
     private String materialName;

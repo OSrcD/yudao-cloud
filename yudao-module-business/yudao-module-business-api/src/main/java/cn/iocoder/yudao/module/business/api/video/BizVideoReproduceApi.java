@@ -38,4 +38,21 @@ public interface BizVideoReproduceApi {
      */
     void startLocalAnalyzeWorkflow(Long taskId);
 
+    /**
+     * 入队一个本地洗图任务（WASH_IMAGE）
+     *
+     * @param refFrameId   关联帧ID
+     * @param execParams   JSON 序列化的执行参数（mode/customPrompt/productUrls 等）
+     */
+    void enqueueWashImageLocalTask(Long refFrameId, String execParams);
+
+    /**
+     * 入队一个本地生成视频任务（GEN_VIDEO）
+     *
+     * @param refTaskId 关联任务ID
+     * @param refFrameId 关联帧ID
+     * @param execParams JSON 序列化的执行参数（prompt/referenceUrls 等）
+     */
+    void enqueueGenVideoLocalTask(Long refTaskId, Long refFrameId, String execParams);
+
 }

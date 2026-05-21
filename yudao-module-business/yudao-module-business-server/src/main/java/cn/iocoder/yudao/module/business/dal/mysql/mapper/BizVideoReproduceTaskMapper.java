@@ -11,6 +11,6 @@ import java.util.List;
 public interface BizVideoReproduceTaskMapper extends BaseMapperX<BizVideoReproduceTaskDO> {
     default List<BizVideoReproduceTaskDO> selectByUserId(Long userId) {
         return selectList(new LambdaQueryWrapperX<BizVideoReproduceTaskDO>()
-                .eq(BizVideoReproduceTaskDO::getCreator, userId));
+                .eq(BizVideoReproduceTaskDO::getUserId, userId));
     }
 }

@@ -18,5 +18,11 @@ public class BizMaterialPageReqVO extends PageParam {
     @Schema(description = "文件类型（0图片 1视频）")
     private String fileType;
 
+    @Schema(description = "用户编号")
+    private Long userId;
+
+    @Schema(description = "用户类型")
+    private Integer userType;
+
 }
 

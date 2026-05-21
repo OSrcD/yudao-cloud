@@ -487,6 +487,62 @@ public class BizAiVideoReproduceServiceImpl implements BizAiVideoReproduceServic
         aiImageService.geekAiGeminiImagine(userId, drawReqVO);
     }
 
+    @Override
+    public void washFrameLocal(Long userId, Long frameId, String washMode, String customPrompt, List<String> refImages) {
+        // 1. 校验帧存在
+        BizVideoReproduceFrameDTO frameDTO = bizVideoReproduceApi.getVideoReproduceFrame(frameId);
+        if (frameDTO == null) {
+            return;
+        }
+
+        // 2. 构造 execParams（对应 VideoReproduceAutomation.executeWashImage 入参格式）
+        //    mode 以 _pure 结尾时，跳过 AI 分析阶段，直接使用 customPrompt 生图
+        String mode = (washMode != null && !washMode.isEmpty()) ? washMode : "fission_pure";
+        String prompt = (customPrompt != null && !customPrompt.isEmpty())
+                ? customPrompt
+                : frameDTO.getGridImagePromptEn();
+
+        List<String> productUrls = (refImages != null && !refImages.isEmpty())
+                ? refImages
+                : frameDTO.getGridSourceImages();
+
+        // sourceUrl 取第一张商品图（ai-chrome-app 的 executeWashImage 要求必填）
+        String sourceUrl = (productUrls != null && !productUrls.isEmpty()) ? productUrls.get(0) : null;
+        if (sourceUrl == null) {
+            log.warn("[washFrameLocal][帧({})无可用参考图，无法创建本地任务]", frameId);
+            return;
+        }
+
+        try {
+            java.util.Map<String, Object> execParamsMap = new java.util.LinkedHashMap<>();
+            execParamsMap.put("mode", mode);
+            execParamsMap.put("customPrompt", prompt);
+            execParamsMap.put("sourceUrl", sourceUrl);
+            
+            // 重要：将已经被选为 sourceUrl 的第一张图从 productUrls 列表剔除，
+            // 否则 ai-chrome-app 会下载两次并上传两次同样的图片！
+            List<String> remainingProductUrls = new java.util.ArrayList<>();
+            if (productUrls.size() > 1) {
+                remainingProductUrls.addAll(productUrls.subList(1, productUrls.size()));
+            }
+            execParamsMap.put("productUrls", remainingProductUrls);
+            
+            String execParamsJson = objectMapper.writeValueAsString(execParamsMap);
+
+            // 3. 更新帧状态为等待中（1）
+            BizVideoReproduceFrameDTO updateDTO = new BizVideoReproduceFrameDTO();
+            updateDTO.setId(frameId);
+            updateDTO.setStatus("1");
+            bizVideoReproduceApi.updateVideoReproduceFrame(updateDTO);
+
+            // 4. 入队本地任务，等待 ai-chrome-app 轮询执行
+            bizVideoReproduceApi.enqueueWashImageLocalTask(frameId, execParamsJson);
+            log.info("[washFrameLocal][帧({})本地洗图任务已入队，mode={}, prompt长度={}]", frameId, mode, prompt.length());
+        } catch (Exception e) {
+            log.error("[washFrameLocal][帧({})入队失败]", frameId, e);
+        }
+    }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -537,6 +593,50 @@ public class BizAiVideoReproduceServiceImpl implements BizAiVideoReproduceServic
         videoReqVO.setSize(width + "x" + height);
         
         bizAiVideoService.submitAihubmixVideo(userId, videoReqVO);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void generateVideoLocal(Long userId, Long frameId, String inputReference) {
+        BizVideoReproduceFrameDTO frameDTO = bizVideoReproduceApi.getVideoReproduceFrame(frameId);
+        if (frameDTO == null) {
+            return;
+        }
+
+        // 构造 execParams（参考 BizVideoReproduceServiceImpl 中的 GEN_VIDEO 逻辑）
+        try {
+            java.util.Map<String, Object> params = new java.util.HashMap<>();
+            params.put("prompt", frameDTO.getI2vPromptEn());
+            
+            // 优先顺序：inputReference > polishedImageUrl > originalImageUrl
+            String refUrl = inputReference;
+            if (!cn.hutool.core.util.StrUtil.isNotEmpty(refUrl)) {
+                refUrl = frameDTO.getPolishedImageUrl();
+            }
+            if (!cn.hutool.core.util.StrUtil.isNotEmpty(refUrl)) {
+                refUrl = frameDTO.getOriginalImageUrl();
+            }
+            
+            List<String> urls = new java.util.ArrayList<>();
+            if (refUrl != null) {
+                urls.add(refUrl);
+            }
+            params.put("referenceUrls", urls);
+            
+            String execParamsJson = objectMapper.writeValueAsString(params);
+
+            // 更新帧状态为处理中
+            BizVideoReproduceFrameDTO updateDTO = new BizVideoReproduceFrameDTO();
+            updateDTO.setId(frameId);
+            updateDTO.setStatus("3");
+            bizVideoReproduceApi.updateVideoReproduceFrame(updateDTO);
+
+            // 存入本地队列
+            bizVideoReproduceApi.enqueueGenVideoLocalTask(frameDTO.getTaskId(), frameId, execParamsJson);
+            log.info("[generateVideoLocal][帧({})本地生成视频任务已入队, referenceUrl={}]", frameId, refUrl);
+        } catch (Exception e) {
+            log.error("[generateVideoLocal][帧({})本地任务入队失败]", frameId, e);
+        }
     }
 
     @Override
@@ -595,6 +695,9 @@ public class BizAiVideoReproduceServiceImpl implements BizAiVideoReproduceServic
                         frameResp.setOutputUrl(videoDO.getVideoUrl());
                         frameResp.setStepStatus(videoDO.getStatus().toString());
                     }
+                } else if (cn.hutool.core.util.StrUtil.isNotEmpty(frameDTO.getGeneratedVideoUrl())) {
+                    // 本地模式时，不会产生 aiVideoId，而是直接在 frame 表里记录 generatedVideoUrl
+                    frameResp.setOutputUrl(frameDTO.getGeneratedVideoUrl());
                 }
                 frames.add(frameResp);
             }

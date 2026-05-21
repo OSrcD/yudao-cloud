@@ -24,6 +24,16 @@ public interface BizAiVideoReproduceService {
     void washFrame(Long userId, Long frameId, Long modelId, Integer width, Integer height);
 
     /**
+     * 触发单帧洗图（本地模式）——直接使用已有 prompt 和 refImages 创建 local-task
+     * @param userId 用户编号
+     * @param frameId 帧编号
+     * @param washMode 洗图模式（fission_pure 等）
+     * @param customPrompt 洗图英文提示词（gridImagePromptEn）
+     * @param refImages 商品参考图列表（gridSourceImages）
+     */
+    void washFrameLocal(Long userId, Long frameId, String washMode, String customPrompt, java.util.List<String> refImages);
+
+    /**
      * 触发生成视频
      * @param userId 用户编号
      * @param frameId 帧编号
@@ -43,6 +53,14 @@ public interface BizAiVideoReproduceService {
      * @param inputReference 视频底图参考
      */
     void generateVideo(Long userId, Long frameId, Long modelId, Integer width, Integer height, String inputReference);
+
+    /**
+     * 触发本地生成视频（不扣费，使用本地 Gemini/AI 自动化）
+     * @param userId 用户编号
+     * @param frameId 帧编号
+     * @param inputReference 视频底图参考
+     */
+    void generateVideoLocal(Long userId, Long frameId, String inputReference);
 
     /**
      * 获取视频复刻配置（如默认模型）

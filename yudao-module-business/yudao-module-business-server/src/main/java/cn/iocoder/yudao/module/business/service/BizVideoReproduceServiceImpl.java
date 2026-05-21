@@ -70,6 +70,8 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
 
         // 2. 创建任务记录
         BizVideoReproduceTaskDO taskDO = new BizVideoReproduceTaskDO();
+        taskDO.setUserId(createReqVO.getUserId());
+        taskDO.setUserType(createReqVO.getUserType());
         taskDO.setOriginalVideoUrl(videoUrl);
         if (StringUtils.hasText(createReqVO.getProductConfigJson())) {
             try {
@@ -1136,6 +1138,8 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
     public PageResult<BizVideoReproduceTaskDO> getTaskPage(BizVideoReproduceTaskPageReqVO pageReqVO) {
         return taskMapper.selectPage(pageReqVO, new LambdaQueryWrapperX<BizVideoReproduceTaskDO>()
                 .eqIfPresent(BizVideoReproduceTaskDO::getStatus, pageReqVO.getStatus())
+                .eqIfPresent(BizVideoReproduceTaskDO::getUserId, pageReqVO.getUserId())
+                .eqIfPresent(BizVideoReproduceTaskDO::getUserType, pageReqVO.getUserType())
                 .orderByDesc(BizVideoReproduceTaskDO::getId));
     }
 

@@ -15,6 +15,8 @@ public interface BizMaterialMapper extends BaseMapperX<BizMaterialDO> {
         return selectPage(reqVO, new LambdaQueryWrapperX<BizMaterialDO>()
                 .likeIfPresent(BizMaterialDO::getMaterialName, reqVO.getMaterialName())
                 .eqIfPresent(BizMaterialDO::getFileType, reqVO.getFileType())
+                .eqIfPresent(BizMaterialDO::getUserId, reqVO.getUserId())
+                .eqIfPresent(BizMaterialDO::getUserType, reqVO.getUserType())
                 .orderByDesc(BizMaterialDO::getId));
     }
 

@@ -92,8 +92,21 @@ public class BizVideoReproduceApiImpl implements BizVideoReproduceApi {
         return cn.iocoder.yudao.framework.common.util.object.BeanUtils.toBean(pageResult, BizVideoReproduceTaskDTO.class);
     }
 
+    @Resource
+    private cn.iocoder.yudao.module.business.service.BizLocalTaskService bizLocalTaskService;
+
     @Override
     public void startLocalAnalyzeWorkflow(Long taskId) {
         videoReproduceService.startLocalAnalyzeWorkflow(taskId);
+    }
+
+    @Override
+    public void enqueueWashImageLocalTask(Long refFrameId, String execParams) {
+        bizLocalTaskService.enqueueTask("WASH_IMAGE", null, refFrameId, execParams);
+    }
+
+    @Override
+    public void enqueueGenVideoLocalTask(Long refTaskId, Long refFrameId, String execParams) {
+        bizLocalTaskService.enqueueTask("GEN_VIDEO", refTaskId, refFrameId, execParams);
     }
 }
