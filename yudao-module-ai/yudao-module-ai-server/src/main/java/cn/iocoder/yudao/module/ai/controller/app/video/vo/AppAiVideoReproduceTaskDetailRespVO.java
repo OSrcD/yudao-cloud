@@ -85,6 +85,12 @@ public class AppAiVideoReproduceTaskDetailRespVO {
         @Schema(description = "关联的引用商品原图列表")
         private List<String> gridSourceImages;
 
+        @Schema(description = "视频生图英文提示词")
+        private String imagePromptForModelEn;
+
+        @Schema(description = "视频生图中文提示词")
+        private String imagePromptZhCheck;
+
         @Schema(description = "生视频英文提示词（实际用于生成视频）")
         private String i2vPromptEn;
 

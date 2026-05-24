@@ -143,6 +143,17 @@ public class BizGeminiVideoServiceImpl implements IBizGeminiVideoService {
                     String forbidden = getJsonField(config, "forbidden", "禁区");
                     String others = getJsonField(config, "others", "其他");
 
+                    String modelName = getJsonField(config, "modelName", "模型名称");
+                    String maxUnitDurationSec = getJsonField(config, "maxUnitDurationSec", "单次最长时长上限");
+                    String fixedLengthOnly = getJsonField(config, "fixedLengthOnly", "固定长度");
+                    String supportsCustomDurationUnderMax = getJsonField(config, "supportsCustomDurationUnderMax", "支持自定义时长");
+
+                    prompt2 = prompt2
+                        .replaceAll("model_name:\\s*\\[填写\\]", "model_name: " + modelName)
+                        .replaceAll("max_unit_duration_sec[^\\[]*\\[填写\\]", "max_unit_duration_sec（单次最长时长上限 L）: " + maxUnitDurationSec)
+                        .replaceAll("fixed_length_only[^\\[]*\\[填写\\]", "fixed_length_only（true / false）: " + fixedLengthOnly)
+                        .replaceAll("supports_custom_duration_under_max[^\\[]*\\[填写\\]", "supports_custom_duration_under_max（true / false）: " + supportsCustomDurationUnderMax);
+
                     prompt3 = prompt3
                         .replace("品类: [填写]", "品类: " + category)
                         .replace("卖点: [填写]", "卖点: " + sellingPoints)

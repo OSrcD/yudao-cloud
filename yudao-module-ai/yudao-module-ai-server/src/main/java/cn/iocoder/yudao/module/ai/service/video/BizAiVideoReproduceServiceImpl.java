@@ -442,7 +442,7 @@ public class BizAiVideoReproduceServiceImpl implements BizAiVideoReproduceServic
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void washFrame(Long userId, Long frameId, Long modelId, Integer width, Integer height) {
+    public void washFrame(Long userId, Long frameId, Long modelId, Integer width, Integer height, String customPrompt) {
         BizVideoReproduceFrameDTO frameDTO = bizVideoReproduceApi.getVideoReproduceFrame(frameId);
         if (frameDTO == null) {
             return;
@@ -472,12 +472,14 @@ public class BizAiVideoReproduceServiceImpl implements BizAiVideoReproduceServic
         // 区分是否为裂变模式
         boolean isFission = (frameDTO.getGridSourceImages() != null && !frameDTO.getGridSourceImages().isEmpty());
         if (isFission) {
-            String prompt = cn.hutool.core.util.StrUtil.isNotEmpty(frameDTO.getGridImagePromptEn()) 
-                    ? frameDTO.getGridImagePromptEn() : frameDTO.getI2vPromptEn();
+            String prompt = cn.hutool.core.util.StrUtil.isNotEmpty(customPrompt) ? customPrompt :
+                    (cn.hutool.core.util.StrUtil.isNotEmpty(frameDTO.getGridImagePromptEn()) 
+                    ? frameDTO.getGridImagePromptEn() : frameDTO.getI2vPromptEn());
             drawReqVO.setPrompt(prompt);
             drawReqVO.setReferImageUrls(frameDTO.getGridSourceImages());
         } else {
-            drawReqVO.setPrompt(frameDTO.getI2vPromptEn());
+            String prompt = cn.hutool.core.util.StrUtil.isNotEmpty(customPrompt) ? customPrompt : frameDTO.getI2vPromptEn();
+            drawReqVO.setPrompt(prompt);
         }
         
         drawReqVO.setModelId(modelId);
@@ -543,6 +545,36 @@ public class BizAiVideoReproduceServiceImpl implements BizAiVideoReproduceServic
         }
     }
 
+
+    @Override
+    public void updateFramePrompts(Long userId, cn.iocoder.yudao.module.ai.controller.app.video.vo.AppAiVideoReproduceUpdatePromptsReqVO reqVO) {
+        BizVideoReproduceFrameDTO updateDTO = new BizVideoReproduceFrameDTO();
+        updateDTO.setId(reqVO.getFrameId());
+        
+        if (reqVO.getOriginalPrompt() != null) {
+            updateDTO.setOriginalPrompt(reqVO.getOriginalPrompt());
+        }
+        if (reqVO.getGridImagePromptEn() != null) {
+            updateDTO.setGridImagePromptEn(reqVO.getGridImagePromptEn());
+        }
+        if (reqVO.getGridImagePromptZh() != null) {
+            updateDTO.setGridImagePromptZh(reqVO.getGridImagePromptZh());
+        }
+        if (reqVO.getImagePromptForModelEn() != null) {
+            updateDTO.setImagePromptForModelEn(reqVO.getImagePromptForModelEn());
+        }
+        if (reqVO.getImagePromptZhCheck() != null) {
+            updateDTO.setImagePromptZhCheck(reqVO.getImagePromptZhCheck());
+        }
+        if (reqVO.getI2vPromptEn() != null) {
+            updateDTO.setI2vPromptEn(reqVO.getI2vPromptEn());
+        }
+        if (reqVO.getI2vPromptZh() != null) {
+            updateDTO.setI2vPromptZh(reqVO.getI2vPromptZh());
+        }
+        
+        bizVideoReproduceApi.updateVideoReproduceFrame(updateDTO);
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -683,21 +715,45 @@ public class BizAiVideoReproduceServiceImpl implements BizAiVideoReproduceServic
 
                 if (cn.hutool.core.util.StrUtil.isNotEmpty(frameDTO.getAiImageId())) {
                     cn.iocoder.yudao.module.ai.dal.dataobject.image.AiImageDO imageDO = aiImageService.getImage(Long.valueOf(frameDTO.getAiImageId()));
-                    if (imageDO != null && cn.hutool.core.util.StrUtil.isNotEmpty(imageDO.getPicUrl())) {
-                        frameResp.setOutputUrl(imageDO.getPicUrl());
-                        frameResp.setStepStatus(imageDO.getStatus() == cn.iocoder.yudao.module.ai.enums.image.AiImageStatusEnum.SUCCESS.getStatus() ? "2" : "1");
+                    if (imageDO != null) {
+                        if (cn.hutool.core.util.StrUtil.isNotEmpty(imageDO.getPicUrl())) {
+                            frameResp.setOutputUrl(imageDO.getPicUrl());
+                        }
+                        if (imageDO.getStatus() != null) {
+                            if (imageDO.getStatus() == 20) {
+                                frameResp.setStepStatus("2"); // 成功
+                            } else if (imageDO.getStatus() == 30) {
+                                frameResp.setStepStatus("3"); // 失败
+                            } else {
+                                frameResp.setStepStatus("1"); // 处理中
+                            }
+                        }
                     }
                 }
                 
                 if (cn.hutool.core.util.StrUtil.isNotEmpty(frameDTO.getAiVideoId())) {
                     cn.iocoder.yudao.module.ai.dal.dataobject.video.BizAiVideoDO videoDO = bizAiVideoMapper.selectById(Long.valueOf(frameDTO.getAiVideoId()));
-                    if (videoDO != null && cn.hutool.core.util.StrUtil.isNotEmpty(videoDO.getVideoUrl())) {
-                        frameResp.setOutputUrl(videoDO.getVideoUrl());
-                        frameResp.setStepStatus(videoDO.getStatus().toString());
+                    if (videoDO != null) {
+                        if (cn.hutool.core.util.StrUtil.isNotEmpty(videoDO.getVideoUrl())) {
+                            frameResp.setOutputUrl(videoDO.getVideoUrl());
+                        }
+                        if (videoDO.getStatus() != null) {
+                            if (videoDO.getStatus() == 20) {
+                                frameResp.setStepStatus("2"); // 成功
+                            } else if (videoDO.getStatus() == 30) {
+                                frameResp.setStepStatus("3"); // 失败
+                            } else {
+                                frameResp.setStepStatus("1"); // 处理中
+                            }
+                        }
                     }
                 } else if (cn.hutool.core.util.StrUtil.isNotEmpty(frameDTO.getGeneratedVideoUrl())) {
                     // 本地模式时，不会产生 aiVideoId，而是直接在 frame 表里记录 generatedVideoUrl
                     frameResp.setOutputUrl(frameDTO.getGeneratedVideoUrl());
+                    frameResp.setStepStatus("2"); // 成功
+                } else if ("3".equals(frameDTO.getStatus()) && !cn.hutool.core.util.StrUtil.isNotEmpty(frameDTO.getGeneratedVideoUrl())) {
+                    // 如果状态是3，但没有生成视频URL，说明是本地正在处理中或者入队了
+                    frameResp.setStepStatus("1");
                 }
                 frames.add(frameResp);
             }

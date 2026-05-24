@@ -20,8 +20,9 @@ public interface BizAiVideoReproduceService {
      * @param modelId 模型编号
      * @param width 宽度
      * @param height 高度
+     * @param customPrompt 自定义提示词
      */
-    void washFrame(Long userId, Long frameId, Long modelId, Integer width, Integer height);
+    void washFrame(Long userId, Long frameId, Long modelId, Integer width, Integer height, String customPrompt);
 
     /**
      * 触发单帧洗图（本地模式）——直接使用已有 prompt 和 refImages 创建 local-task
@@ -61,6 +62,13 @@ public interface BizAiVideoReproduceService {
      * @param inputReference 视频底图参考
      */
     void generateVideoLocal(Long userId, Long frameId, String inputReference);
+
+    /**
+     * 更新分镜提示词
+     * @param userId 用户编号
+     * @param reqVO 请求
+     */
+    void updateFramePrompts(Long userId, cn.iocoder.yudao.module.ai.controller.app.video.vo.AppAiVideoReproduceUpdatePromptsReqVO reqVO);
 
     /**
      * 获取视频复刻配置（如默认模型）

@@ -49,15 +49,22 @@ public class AppAiVideoReproduceController {
                                          @RequestParam("height") Integer height,
                                          @RequestParam(value = "useLocal", defaultValue = "false") Boolean useLocal,
                                          @RequestBody(required = false) java.util.Map<String, Object> localParams) {
+        String customPrompt = localParams != null ? (String) localParams.get("customPrompt") : null;
         if (Boolean.TRUE.equals(useLocal)) {
             String washMode = localParams != null ? (String) localParams.get("washMode") : null;
-            String customPrompt = localParams != null ? (String) localParams.get("customPrompt") : null;
             @SuppressWarnings("unchecked")
             java.util.List<String> refImages = localParams != null ? (java.util.List<String>) localParams.get("refImages") : null;
             aiVideoReproduceService.washFrameLocal(getLoginUserId(), frameId, washMode, customPrompt, refImages);
         } else {
-            aiVideoReproduceService.washFrame(getLoginUserId(), frameId, modelId, width, height);
+            aiVideoReproduceService.washFrame(getLoginUserId(), frameId, modelId, width, height, customPrompt);
         }
+        return success(true);
+    }
+
+    @PostMapping("/update-prompts")
+    @Operation(summary = "更新分镜提示词")
+    public CommonResult<Boolean> updatePrompts(@Valid @RequestBody cn.iocoder.yudao.module.ai.controller.app.video.vo.AppAiVideoReproduceUpdatePromptsReqVO reqVO) {
+        aiVideoReproduceService.updateFramePrompts(getLoginUserId(), reqVO);
         return success(true);
     }
 

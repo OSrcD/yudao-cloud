@@ -48,6 +48,10 @@ public class BizVideoReproduceFrameDO extends BaseDO {
     private Map<String, Object> audioConfigJson;
 
     /**
+     * 分镜原始结构描述/裂变微动提示词
+     */
+    private String originalPrompt;
+    /**
      * 宫格生图英文提示词
      */
     private String gridImagePromptEn;
@@ -55,6 +59,14 @@ public class BizVideoReproduceFrameDO extends BaseDO {
      * 宫格生图中文提示词
      */
     private String gridImagePromptZh;
+    /**
+     * 视频生图英文提示词 (image_prompt_for_model_en)
+     */
+    private String imagePromptForModelEn;
+    /**
+     * 视频生图中文提示词 (image_prompt_zh_check)
+     */
+    private String imagePromptZhCheck;
     /**
      * 关联的引用商品原图列表
      */

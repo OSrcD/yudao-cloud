@@ -21,5 +21,8 @@ public class BizVideoReproduceFrameDTO {
     
     private String gridImagePromptEn;
     private String gridImagePromptZh;
+    private String imagePromptForModelEn;
+    private String imagePromptZhCheck;
+    private String originalPrompt;
     private java.util.List<String> gridSourceImages;
 }

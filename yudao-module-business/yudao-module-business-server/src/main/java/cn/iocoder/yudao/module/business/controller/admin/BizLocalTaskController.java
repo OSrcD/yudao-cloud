@@ -68,6 +68,13 @@ public class BizLocalTaskController {
         return success(localTaskService.getLocalTaskPage(pageVO));
     }
 
+    @GetMapping("/count-pending")
+    @Operation(summary = "获得待处理本地任务数量")
+    @PermitAll
+    public CommonResult<Long> getPendingCount() {
+        return success(localTaskService.getCount());
+    }
+
     @PostMapping("/poll")
     @Operation(summary = "拉取一个本地任务")
     @PermitAll

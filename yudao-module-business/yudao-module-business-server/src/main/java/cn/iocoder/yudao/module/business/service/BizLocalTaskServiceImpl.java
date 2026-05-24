@@ -112,6 +112,30 @@ public class BizLocalTaskServiceImpl implements BizLocalTaskService {
         if (task != null) {
             task.setStatus(1); // 运行中
             localTaskMapper.updateById(task);
+
+            // 更新关联的主任务或分镜状态，以反馈给前端“处理中”
+            TenantUtils.execute(task.getTenantId(), () -> {
+                if ("ANALYZE_VIDEO".equals(task.getTaskType())) {
+                    BizVideoReproduceTaskDO taskUpdate = new BizVideoReproduceTaskDO();
+                    taskUpdate.setId(task.getRefTaskId());
+                    taskUpdate.setStatus("11"); // 11 表示本地处理中
+                    taskUpdate.setRemark("本地端正在处理视频分析...");
+                    taskMapper.updateById(taskUpdate);
+                } else {
+                    Long frameId = task.getRefFrameId();
+                    if (frameId != null) {
+                        BizVideoReproduceFrameDO frameUpdate = new BizVideoReproduceFrameDO();
+                        frameUpdate.setId(frameId);
+                        if ("WASH_IMAGE".equals(task.getTaskType())) {
+                            frameUpdate.setStatus("1"); // 洗图中
+                        } else if ("GEN_VIDEO".equals(task.getTaskType())) {
+                            frameUpdate.setStatus("3"); // 视频生成中
+                        }
+                        frameMapper.updateById(frameUpdate);
+                    }
+                }
+            });
+
             return task;
         }
         return null;
@@ -139,12 +163,16 @@ public class BizLocalTaskServiceImpl implements BizLocalTaskService {
         localTask.setErrorMsg(errorMsg);
         localTaskMapper.updateById(localTask);
 
-        if (!success) {
-            return;
-        }
-
         TenantUtils.execute(localTask.getTenantId(), () -> {
             if ("ANALYZE_VIDEO".equals(localTask.getTaskType())) {
+                if (!success) {
+                    BizVideoReproduceTaskDO taskUpdate = new BizVideoReproduceTaskDO();
+                    taskUpdate.setId(localTask.getRefTaskId());
+                    taskUpdate.setStatus("9");
+                    taskUpdate.setErrorMsg("处理本地回传的分析结果失败: " + errorMsg);
+                    taskMapper.updateById(taskUpdate);
+                    return;
+                }
                 try {
                     BizVideoReproduceService videoReproduceService = applicationContext.getBean(BizVideoReproduceService.class);
                     videoReproduceService.continueFullWorkflowAfterAnalysis(localTask.getRefTaskId(), resultData);
@@ -161,6 +189,11 @@ public class BizLocalTaskServiceImpl implements BizLocalTaskService {
                 if (frameId != null) {
                     BizVideoReproduceFrameDO frame = frameMapper.selectById(frameId);
                     if (frame != null) {
+                        if (!success) {
+                            frame.setStatus("3"); // 统一使用 "3" 表示失败
+                            frameMapper.updateById(frame);
+                            return;
+                        }
                         try {
                             JsonNode resultJson = objectMapper.readTree(resultData);
                             if ("WASH_IMAGE".equals(localTask.getTaskType())) {

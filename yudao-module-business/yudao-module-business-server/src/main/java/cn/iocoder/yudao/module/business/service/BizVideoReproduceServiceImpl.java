@@ -82,7 +82,7 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
         }
         taskDO.setCharImages(uploadFiles(createReqVO.getCharImages()));
         taskDO.setProductImages(uploadFiles(createReqVO.getProductImages()));
-        taskDO.setStatus("RUNNING");
+        taskDO.setStatus("0");
         taskMapper.insert(taskDO);
 
         // 3. 异步启动工作流
@@ -126,7 +126,7 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
         BizVideoReproduceTaskDO task = taskMapper.selectById(taskId);
         if (task == null) return;
 
-        updateTaskStatus(taskId, "10", "任务已下发至本地队列，等待分析...");
+        updateTaskStatus(taskId, "10", "待处理: 正在使用AI生成结构与提示词...");
         
         // 生成提示词
         List<String> prompts = geminiVideoService.getVeo3Prompts(task.getProductConfigJson() != null ? 
@@ -150,6 +150,7 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
             prompts.forEach(promptsArray::add);
 
             localTaskService.enqueueTask("ANALYZE_VIDEO", taskId, null, objectMapper.writeValueAsString(params));
+            updateTaskStatus(taskId, "10", "提示词已生成，任务已下发至本地排队...");
         } catch (Exception e) {
             log.error("下发本地分析任务失败", e);
             updateTaskStatus(taskId, "9", "本地发单失败: " + e.getMessage());
@@ -296,10 +297,10 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                 params.put("startImageUrl", StringUtils.hasText(frame.getPolishedImageUrl()) ? frame.getPolishedImageUrl() : frame.getOriginalImageUrl());
                 params.put("prompt", frame.getI2vPromptEn());
                 localTaskService.enqueueTask("GEN_VIDEO", frame.getTaskId(), frameId, objectMapper.writeValueAsString(params));
+                return;
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
         }
 
 
@@ -1064,6 +1065,13 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                 String i2vPromptZh = unit.path("i2v_prompt_zh_check").isContainerNode()
                         ? unit.path("i2v_prompt_zh_check").path("visual_dialogue_sfx").asText()
                         : unit.path("i2v_prompt_zh_check").asText();
+                        
+                String imagePromptForModelEn = unit.path("image_prompt_for_model_en").isContainerNode()
+                        ? unit.path("image_prompt_for_model_en").path("visual_dialogue_sfx").asText()
+                        : unit.path("image_prompt_for_model_en").asText();
+                String imagePromptZhCheck = unit.path("image_prompt_zh_check").isContainerNode()
+                        ? unit.path("image_prompt_zh_check").path("visual_dialogue_sfx").asText()
+                        : unit.path("image_prompt_zh_check").asText();
 
                 // 按 taskId + unit_id 查找已有的帧（第三套回调已建好）
                 BizVideoReproduceFrameDO frameDO = frameMapper.selectOne(
@@ -1079,6 +1087,9 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
 
                 frameDO.setI2vPromptEn(i2vPromptEn);
                 frameDO.setI2vPromptZh(i2vPromptZh);
+                frameDO.setImagePromptForModelEn(imagePromptForModelEn);
+                frameDO.setImagePromptZhCheck(imagePromptZhCheck);
+                
                 frameMapper.updateById(frameDO);
                 updated++;
                 log.info("[第四套回调] taskId={} unitId={} i2vPromptEn长度={} 更新成功", taskId, unitId, i2vPromptEn.length());
