@@ -20,6 +20,9 @@ public class AppAiVideoReproduceTaskDetailRespVO {
     @Schema(description = "配置 JSON")
     private Map<String, Object> productConfigJson;
 
+    @Schema(description = "关联的商品图片集")
+    private List<String> productImages;
+
     @Schema(description = "最终解析结果 JSON")
     private String resultJson;
 
@@ -105,6 +108,28 @@ public class AppAiVideoReproduceTaskDetailRespVO {
 
         @Schema(description = "创建时间")
         private LocalDateTime createTime;
+
+        @Schema(description = "首帧单图商品图引用")
+        private List<Integer> singleImageSourceIndices;
+        @Schema(description = "首帧单图商品图URL")
+        private List<String> singleSourceImages;
+        @Schema(description = "首帧单图视频英文提示词")
+        private String singleI2vPromptEn;
+        @Schema(description = "首帧单图视频中文提示词")
+        private String singleI2vPromptZh;
+
+        @Schema(description = "人物图商品图引用")
+        private List<Integer> peopleSingleImageSourceIndices;
+        @Schema(description = "人物图商品图URL")
+        private List<String> peopleSingleSourceImages;
+        @Schema(description = "人物图英文提示词")
+        private String peopleSingleImagePromptEn;
+        @Schema(description = "人物图中文提示词")
+        private String peopleSingleImagePromptZh;
+        @Schema(description = "人物单图视频英文提示词")
+        private String peopleSingleI2vPromptEn;
+        @Schema(description = "人物单图视频中文提示词")
+        private String peopleSingleI2vPromptZh;
     }
 }
 

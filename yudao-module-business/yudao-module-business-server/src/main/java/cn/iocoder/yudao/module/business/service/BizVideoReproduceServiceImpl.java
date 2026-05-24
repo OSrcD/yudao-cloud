@@ -128,9 +128,9 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
 
         updateTaskStatus(taskId, "10", "待处理: 正在使用AI生成结构与提示词...");
         
-        // 生成提示词
+        int productImageCount = task.getProductImages() != null ? task.getProductImages().size() : 0;
         List<String> prompts = geminiVideoService.getVeo3Prompts(task.getProductConfigJson() != null ? 
-            cn.hutool.json.JSONUtil.toJsonStr(task.getProductConfigJson()) : "");
+            cn.hutool.json.JSONUtil.toJsonStr(task.getProductConfigJson()) : "", productImageCount);
 
         try {
             com.fasterxml.jackson.databind.node.ObjectNode params = objectMapper.createObjectNode();
@@ -801,7 +801,7 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                 taskMapper.updateById(task);
 
                 updateTaskStatus(taskId, "2", "正在更新分镜帧提示词...");
-
+                
                 JsonNode units = root.path("units");
                 JsonNode gridSuggestions = root.path("grid_suggestions");
                 if (units.isMissingNode() || !units.isArray()) {
@@ -843,6 +843,46 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                     frameDO.setI2vPromptEn(i2vPromptEn);
                     frameDO.setI2vPromptZh(i2vPromptZh);
 
+                    if (unit.has("single_image_source_indices") && !unit.path("single_image_source_indices").isMissingNode()) {
+                        List<Integer> indices = objectMapper.convertValue(unit.path("single_image_source_indices"), new TypeReference<List<Integer>>() {});
+                        frameDO.setSingleImageSourceIndices(indices);
+                        if (indices != null && productImages != null) {
+                            List<String> urls = new ArrayList<>();
+                            for (Integer idx : indices) {
+                                int imgIdx = idx;
+                                if (imgIdx >= 0 && imgIdx < productImages.size()) {
+                                    urls.add(productImages.get(imgIdx));
+                                }
+                            }
+                            frameDO.setSingleSourceImages(urls);
+                        }
+                    }
+                    frameDO.setSingleI2vPromptEn(extractText(unit, "single_i2v_prompt_for_model_en"));
+                    frameDO.setSingleI2vPromptZh(extractText(unit, "single_i2v_prompt_zh_check"));
+                    
+                    if (unit.has("people_single_image_source_indices") && !unit.path("people_single_image_source_indices").isMissingNode()) {
+                        List<Integer> indices = objectMapper.convertValue(unit.path("people_single_image_source_indices"), new TypeReference<List<Integer>>() {});
+                        frameDO.setPeopleSingleImageSourceIndices(indices);
+                        if (indices != null && productImages != null) {
+                            List<String> urls = new ArrayList<>();
+                            for (Integer idx : indices) {
+                                int imgIdx = idx;
+                                if (imgIdx >= 0 && imgIdx < productImages.size()) {
+                                    urls.add(productImages.get(imgIdx));
+                                }
+                            }
+                            frameDO.setPeopleSingleSourceImages(urls);
+                        }
+                    }
+                    frameDO.setPeopleSingleImagePromptEn(extractText(unit, "people_single_image_prompt_for_model_en"));
+                    frameDO.setPeopleSingleImagePromptZh(extractText(unit, "people_single_image_prompt_zh_check"));
+                    frameDO.setPeopleSingleI2vPromptEn(extractText(unit, "people_single_i2v_prompt_for_model_en"));
+                    frameDO.setPeopleSingleI2vPromptZh(extractText(unit, "people_single_i2v_prompt_zh_check"));
+                    
+                    frameDO.setImagePromptForModelEn(extractText(unit, "image_prompt_for_model_en"));
+                    frameDO.setImagePromptZhCheck(extractText(unit, "image_prompt_zh_check"));
+
+
                     String gridImagePromptEn = "";
                     String gridImagePromptZh = "";
                     List<String> gridSourceImages = new ArrayList<>();
@@ -859,9 +899,9 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
 
                                 JsonNode indicesNode = suggestion.path("source_image_indices");
                                 if (indicesNode.isArray() && productImages != null) {
-                                    for (JsonNode indexNode : indicesNode) {
+                                for (JsonNode indexNode : indicesNode) {
                                         int rawIdx = indexNode.asInt();
-                                        int imgIdx = rawIdx - 1; // 1-based to 0-based
+                                        int imgIdx = rawIdx; // 0-based index
                                         if (imgIdx >= 0 && imgIdx < productImages.size()) {
                                             gridSourceImages.add(productImages.get(imgIdx));
                                         }
@@ -1054,24 +1094,13 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                 return;
             }
 
+            BizVideoReproduceTaskDO task = taskMapper.selectById(taskId);
+            List<String> productImages = task != null ? task.getProductImages() : null;
+
             int updated = 0;
             for (JsonNode unit : unitsNode) {
                 String unitId = unit.path("unit_id").asText();
                 if (unitId.isEmpty()) continue;
-
-                String i2vPromptEn = unit.path("i2v_prompt_for_model_en").isContainerNode()
-                        ? unit.path("i2v_prompt_for_model_en").path("visual_dialogue_sfx").asText()
-                        : unit.path("i2v_prompt_for_model_en").asText();
-                String i2vPromptZh = unit.path("i2v_prompt_zh_check").isContainerNode()
-                        ? unit.path("i2v_prompt_zh_check").path("visual_dialogue_sfx").asText()
-                        : unit.path("i2v_prompt_zh_check").asText();
-                        
-                String imagePromptForModelEn = unit.path("image_prompt_for_model_en").isContainerNode()
-                        ? unit.path("image_prompt_for_model_en").path("visual_dialogue_sfx").asText()
-                        : unit.path("image_prompt_for_model_en").asText();
-                String imagePromptZhCheck = unit.path("image_prompt_zh_check").isContainerNode()
-                        ? unit.path("image_prompt_zh_check").path("visual_dialogue_sfx").asText()
-                        : unit.path("image_prompt_zh_check").asText();
 
                 // 按 taskId + unit_id 查找已有的帧（第三套回调已建好）
                 BizVideoReproduceFrameDO frameDO = frameMapper.selectOne(
@@ -1081,23 +1110,74 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                 );
 
                 if (frameDO == null) {
-                    log.warn("[第四套回调] taskId={} unitId={} 未找到已有帧，跳过", taskId, unitId);
+                    log.warn("[提示词回调] taskId={} unitId={} 未找到已有帧，跳过", taskId, unitId);
                     continue;
                 }
 
-                frameDO.setI2vPromptEn(i2vPromptEn);
-                frameDO.setI2vPromptZh(i2vPromptZh);
-                frameDO.setImagePromptForModelEn(imagePromptForModelEn);
-                frameDO.setImagePromptZhCheck(imagePromptZhCheck);
+                if (unit.has("people_single_image_source_indices")) {
+                    // 第八套回调：人物生图及生视频提示词
+                    if (!unit.path("people_single_image_source_indices").isMissingNode()) {
+                        List<Integer> indices = objectMapper.convertValue(unit.path("people_single_image_source_indices"), new TypeReference<List<Integer>>() {});
+                        frameDO.setPeopleSingleImageSourceIndices(indices);
+                        if (indices != null && productImages != null) {
+                            List<String> urls = new ArrayList<>();
+                            for (Integer idx : indices) {
+                                int imgIdx = idx;
+                                if (imgIdx >= 0 && imgIdx < productImages.size()) {
+                                    urls.add(productImages.get(imgIdx));
+                                }
+                            }
+                            frameDO.setPeopleSingleSourceImages(urls);
+                        }
+                    }
+                    frameDO.setPeopleSingleImagePromptEn(extractText(unit, "people_single_image_prompt_for_model_en"));
+                    frameDO.setPeopleSingleImagePromptZh(extractText(unit, "people_single_image_prompt_zh_check"));
+                    frameDO.setPeopleSingleI2vPromptEn(extractText(unit, "people_single_i2v_prompt_for_model_en"));
+                    frameDO.setPeopleSingleI2vPromptZh(extractText(unit, "people_single_i2v_prompt_zh_check"));
+                } else if (unit.has("single_image_source_indices")) {
+                    // 第七套回调：首帧图及生视频提示词
+                    if (!unit.path("single_image_source_indices").isMissingNode()) {
+                        List<Integer> indices = objectMapper.convertValue(unit.path("single_image_source_indices"), new TypeReference<List<Integer>>() {});
+                        frameDO.setSingleImageSourceIndices(indices);
+                        if (indices != null && productImages != null) {
+                            List<String> urls = new ArrayList<>();
+                            for (Integer idx : indices) {
+                                int imgIdx = idx;
+                                if (imgIdx >= 0 && imgIdx < productImages.size()) {
+                                    urls.add(productImages.get(imgIdx));
+                                }
+                            }
+                            frameDO.setSingleSourceImages(urls);
+                        }
+                    }
+                    frameDO.setSingleI2vPromptEn(extractText(unit, "single_i2v_prompt_for_model_en"));
+                    frameDO.setSingleI2vPromptZh(extractText(unit, "single_i2v_prompt_zh_check"));
+                    frameDO.setImagePromptForModelEn(extractText(unit, "image_prompt_for_model_en"));
+                    frameDO.setImagePromptZhCheck(extractText(unit, "image_prompt_zh_check"));
+                } else {
+                    // 第六套回调：宫格图生视频提示词
+                    frameDO.setI2vPromptEn(extractText(unit, "i2v_prompt_for_model_en"));
+                    frameDO.setI2vPromptZh(extractText(unit, "i2v_prompt_zh_check"));
+                    frameDO.setImagePromptForModelEn(extractText(unit, "image_prompt_for_model_en"));
+                    frameDO.setImagePromptZhCheck(extractText(unit, "image_prompt_zh_check"));
+                }
                 
                 frameMapper.updateById(frameDO);
                 updated++;
-                log.info("[第四套回调] taskId={} unitId={} i2vPromptEn长度={} 更新成功", taskId, unitId, i2vPromptEn.length());
+                log.info("[提示词回调] taskId={} unitId={} 更新成功", taskId, unitId);
             }
-            log.info("[第四套回调] taskId={} 共更新 {} 帧的生视频提示词", taskId, updated);
+            log.info("[提示词回调] taskId={} 共更新 {} 帧的生视频提示词", taskId, updated);
         } catch (Exception e) {
-            log.error("[第四套回调] taskId={} 处理失败", taskId, e);
+            log.error("[提示词回调] taskId={} 处理失败", taskId, e);
         }
+    }
+
+    private String extractText(JsonNode node, String fieldName) {
+        JsonNode fieldNode = node.path(fieldName);
+        if (fieldNode.isMissingNode() || fieldNode.isNull()) {
+            return null;
+        }
+        return fieldNode.isContainerNode() ? fieldNode.path("visual_dialogue_sfx").asText(null) : fieldNode.asText(null);
     }
 
 

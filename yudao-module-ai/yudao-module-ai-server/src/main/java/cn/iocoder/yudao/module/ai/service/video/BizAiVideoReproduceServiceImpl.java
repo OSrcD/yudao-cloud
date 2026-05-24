@@ -693,6 +693,7 @@ public class BizAiVideoReproduceServiceImpl implements BizAiVideoReproduceServic
         }
 
         AppAiVideoReproduceTaskDetailRespVO respVO = BeanUtil.toBean(taskDTO, AppAiVideoReproduceTaskDetailRespVO.class);
+        respVO.setProductImages(taskDTO.getProductImages());
 
         java.util.List<BizVideoReproduceFrameDTO> frameDTOs = bizVideoReproduceApi.getVideoReproduceFrameListByTaskId(taskId);
         if (cn.hutool.core.collection.CollUtil.isNotEmpty(frameDTOs)) {
@@ -709,6 +710,20 @@ public class BizAiVideoReproduceServiceImpl implements BizAiVideoReproduceServic
                 // 显式填充生视频提示词字段（供前端步骤二展示）
                 frameResp.setI2vPromptEn(frameDTO.getI2vPromptEn());
                 frameResp.setI2vPromptZh(frameDTO.getI2vPromptZh());
+                
+                // 显式填充新增的第7第8步独立字段
+                frameResp.setSingleImageSourceIndices(frameDTO.getSingleImageSourceIndices());
+                frameResp.setSingleSourceImages(frameDTO.getSingleSourceImages());
+                frameResp.setSingleI2vPromptEn(frameDTO.getSingleI2vPromptEn());
+                frameResp.setSingleI2vPromptZh(frameDTO.getSingleI2vPromptZh());
+                
+                frameResp.setPeopleSingleImageSourceIndices(frameDTO.getPeopleSingleImageSourceIndices());
+                frameResp.setPeopleSingleSourceImages(frameDTO.getPeopleSingleSourceImages());
+                frameResp.setPeopleSingleImagePromptEn(frameDTO.getPeopleSingleImagePromptEn());
+                frameResp.setPeopleSingleImagePromptZh(frameDTO.getPeopleSingleImagePromptZh());
+                frameResp.setPeopleSingleI2vPromptEn(frameDTO.getPeopleSingleI2vPromptEn());
+                frameResp.setPeopleSingleI2vPromptZh(frameDTO.getPeopleSingleI2vPromptZh());
+
                 // 显式填充分镜标识和洗图结果（BeanUtil 可能因字段名差异而丢失）
                 frameResp.setGuId(frameDTO.getGuId());
                 frameResp.setPolishedImageUrl(frameDTO.getPolishedImageUrl());

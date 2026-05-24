@@ -18,7 +18,7 @@ public interface IBizGeminiVideoService {
     /**
      * 获取 Veo3 提示词列表
      */
-    List<String> getVeo3Prompts(String productConfigJson);
+    List<String> getVeo3Prompts(String productConfigJson, int productImageCount);
 
     /**
      * 生成 Veo3 JSON

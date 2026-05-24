@@ -111,7 +111,7 @@ public class BizGeminiVideoServiceImpl implements IBizGeminiVideoService {
     }
 
     @Override
-    public List<String> getVeo3Prompts(String productConfigJson) {
+    public List<String> getVeo3Prompts(String productConfigJson, int productImageCount) {
         boolean isFission = false;
         if (StringUtils.hasText(productConfigJson)) {
             try {
@@ -129,6 +129,13 @@ public class BizGeminiVideoServiceImpl implements IBizGeminiVideoService {
             String prompt4 = getRoleSystemMessage(26, "（缺失提示词：商品适配裂变改写导演输出格式）");
             String prompt5 = getRoleSystemMessage(27, "（缺失提示词：裂变生成提示词导演）");
             String prompt6 = getRoleSystemMessage(28, "（缺失提示词：裂变生成提示词导演输出格式）");
+            String prompt7 = getRoleSystemMessage(31, "（缺失提示词：裂变生成提示词导演输出格式（继续1））");
+            String prompt8 = getRoleSystemMessage(32, "（缺失提示词：裂变生成提示词导演输出格式（继续2））");
+
+            prompt3 = prompt3
+                .replace("[图片命名与编号填写]", buildImageNamesStr(productImageCount))
+                .replace("[图片总数填写]", String.valueOf(productImageCount))
+                .replace("[originImage填写]", buildImageIndicesStr(productImageCount));
 
             if (StringUtils.hasText(productConfigJson)) {
                 try {
@@ -168,7 +175,7 @@ public class BizGeminiVideoServiceImpl implements IBizGeminiVideoService {
                 }
             }
 
-            return Arrays.asList(prompt1, prompt2, prompt3, prompt4, prompt5, prompt6);
+            return Arrays.asList(prompt1, prompt2, prompt3, prompt4, prompt5, prompt6, prompt7, prompt8);
         } else {
             String prompt1 = getPromptByTemplateType(8, "（缺失提示词1：veo3.1-短视频分镜逆向工程师）");
             String prompt2 = getPromptByTemplateType(9, "（缺失提示词2：veo3.1-短视频8秒生成单元无损改写器）");
@@ -210,6 +217,30 @@ public class BizGeminiVideoServiceImpl implements IBizGeminiVideoService {
         }
     }
 
+    private String buildImageNamesStr(int count) {
+        if (count == 0) return "未上传图片";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            sb.append("第").append(i + 1).append("张图\n");
+            sb.append("命名为：原图").append(i).append("。\n");
+            sb.append("数字编号为：").append(i).append("\n");
+        }
+        return sb.toString().trim();
+    }
+
+    private String buildImageIndicesStr(int count) {
+        if (count == 0) return "[]";
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < count; i++) {
+            sb.append(i);
+            if (i < count - 1) {
+                sb.append(",");
+            }
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
     private String getJsonField(JsonNode config, String enKey, String zhKey) {
         if (config.has(enKey)) {
             return config.path(enKey).asText("");
@@ -231,7 +262,8 @@ public class BizGeminiVideoServiceImpl implements IBizGeminiVideoService {
     @Override
     public String generateVeo3Json(String videoUrl, String productConfigJson, List<String> charImageUrls, List<String> productImageUrls, String mode) {
         try {
-            List<String> prompts = getVeo3Prompts(productConfigJson);
+            int productImageCount = productImageUrls != null ? productImageUrls.size() : 0;
+            List<String> prompts = getVeo3Prompts(productConfigJson, productImageCount);
             String targetModel = getTargetModel(mode);
             GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().model(targetModel).build();
 
@@ -240,7 +272,7 @@ public class BizGeminiVideoServiceImpl implements IBizGeminiVideoService {
             String mimeType = videoUrl.toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4";
             Media media = new Media(MimeTypeUtils.parseMimeType(mimeType), videoResource);
             
-            if (prompts.size() == 6) {
+            if (prompts.size() == 8) {
                 // 1. Step 1: 前置逆向工程
                 chatHistory.add(UserMessage.builder().text(prompts.get(0)).media(media).build());
                 AssistantMessage assist1 = chatModel.call(new Prompt(chatHistory, options)).getResult().getOutput();
@@ -276,7 +308,44 @@ public class BizGeminiVideoServiceImpl implements IBizGeminiVideoService {
                 // 6. Step 6: 裂变生成提示词导演输出格式（JSON 格式）
                 chatHistory.add(new UserMessage(prompts.get(5)));
                 AssistantMessage assist6 = chatModel.call(new Prompt(chatHistory, jsonOptions)).getResult().getOutput();
-                return assist6.getText();
+                chatHistory.add(assist6);
+
+                // 7. Step 7: 继续1（首帧图）
+                chatHistory.add(new UserMessage(prompts.get(6)));
+                AssistantMessage assist7 = chatModel.call(new Prompt(chatHistory, jsonOptions)).getResult().getOutput();
+                chatHistory.add(assist7);
+
+                // 8. Step 8: 继续2（人物图）
+                chatHistory.add(new UserMessage(prompts.get(7)));
+                AssistantMessage assist8 = chatModel.call(new Prompt(chatHistory, jsonOptions)).getResult().getOutput();
+
+                try {
+                    JsonNode s4Obj = objectMapper.readTree(assist4.getText());
+                    JsonNode s6Obj = objectMapper.readTree(assist6.getText());
+                    JsonNode s7Obj = objectMapper.readTree(assist7.getText());
+                    JsonNode s8Obj = objectMapper.readTree(assist8.getText());
+
+                    ArrayNode mergedUnits = objectMapper.createArrayNode();
+                    if (s6Obj.has("units")) {
+                        mergedUnits.addAll((ArrayNode) s6Obj.path("units"));
+                    } else if (s6Obj.isArray()) {
+                        mergedUnits.addAll((ArrayNode) s6Obj);
+                    }
+
+                    // Simple merge for units
+                    ObjectNode finalObj = objectMapper.createObjectNode();
+                    if (s4Obj.has("grid_suggestions")) {
+                        finalObj.set("grid_suggestions", s4Obj.path("grid_suggestions"));
+                    } else {
+                        finalObj.set("grid_suggestions", s4Obj);
+                    }
+                    finalObj.set("units", mergedUnits);
+                    
+                    return objectMapper.writeValueAsString(finalObj);
+                } catch (Exception e) {
+                    log.warn("合并 JSON 失败", e);
+                    return assist6.getText();
+                }
             } else {
                 chatHistory.add(UserMessage.builder().text(prompts.get(0)).media(media).build());
                 AssistantMessage assist1 = chatModel.call(new Prompt(chatHistory, options)).getResult().getOutput();
