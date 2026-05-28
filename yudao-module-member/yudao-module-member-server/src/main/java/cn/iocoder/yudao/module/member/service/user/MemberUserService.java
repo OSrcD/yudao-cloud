@@ -155,6 +155,14 @@ public interface MemberUserService {
     void updateUserLevel(Long id, Long levelId, Integer experience);
 
     /**
+     * 管理后台修改用户密码
+     *
+     * @param id 用户编号
+     * @param password 新密码
+     */
+    void updateUserPassword(Long id, String password);
+
+    /**
      * 获得指定用户分组下的用户数量
      *
      * @param groupId 用户分组编号

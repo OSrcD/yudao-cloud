@@ -290,6 +290,17 @@ public class MemberUserServiceImpl implements MemberUserService {
     }
 
     @Override
+    public void updateUserPassword(Long id, String password) {
+        // 校验用户存在
+        validateUserExists(id);
+        // 更新密码
+        memberUserMapper.updateById(new MemberUserDO()
+                .setId(id)
+                .setPassword(encodePassword(password))
+        );
+    }
+
+    @Override
     public Long getUserCountByGroupId(Long groupId) {
         return memberUserMapper.selectCountByGroupId(groupId);
     }

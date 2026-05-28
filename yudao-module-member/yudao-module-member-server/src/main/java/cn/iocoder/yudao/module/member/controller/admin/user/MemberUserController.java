@@ -59,6 +59,13 @@ public class MemberUserController {
         return success(true);
     }
 
+    @PutMapping("/update-password")
+    @Operation(summary = "更新会员用户密码")
+    public CommonResult<Boolean> updateUserPassword(@Valid @RequestBody MemberUserUpdatePasswordReqVO updateReqVO) {
+        memberUserService.updateUserPassword(updateReqVO.getId(), updateReqVO.getPassword());
+        return success(true);
+    }
+
     @PutMapping("/update-level")
     @Operation(summary = "更新会员用户等级")
     @PreAuthorize("@ss.hasPermission('member:user:update-level')")

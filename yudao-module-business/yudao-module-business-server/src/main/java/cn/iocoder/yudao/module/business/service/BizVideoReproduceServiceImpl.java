@@ -886,6 +886,7 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                     String gridImagePromptEn = "";
                     String gridImagePromptZh = "";
                     List<String> gridSourceImages = new ArrayList<>();
+                    List<Integer> gridSourceImageIndices = new ArrayList<>();
 
                     if (gridSuggestions != null && gridSuggestions.isArray()) {
                         for (JsonNode suggestion : gridSuggestions) {
@@ -898,11 +899,12 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                                         : suggestion.path("image_prompt_zh_check").asText();
 
                                 JsonNode indicesNode = suggestion.path("source_image_indices");
-                                if (indicesNode.isArray() && productImages != null) {
-                                for (JsonNode indexNode : indicesNode) {
+                                if (indicesNode.isArray()) {
+                                    for (JsonNode indexNode : indicesNode) {
                                         int rawIdx = indexNode.asInt();
+                                        gridSourceImageIndices.add(rawIdx);
                                         int imgIdx = rawIdx; // 0-based index
-                                        if (imgIdx >= 0 && imgIdx < productImages.size()) {
+                                        if (productImages != null && imgIdx >= 0 && imgIdx < productImages.size()) {
                                             gridSourceImages.add(productImages.get(imgIdx));
                                         }
                                     }
@@ -916,6 +918,7 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                         frameDO.setGridImagePromptEn(gridImagePromptEn);
                         frameDO.setGridImagePromptZh(gridImagePromptZh);
                         frameDO.setGridSourceImages(gridSourceImages);
+                        frameDO.setSourceImageIndices(gridSourceImageIndices);
                         if (!gridSourceImages.isEmpty()) {
                             frameDO.setOriginalImageUrl(gridSourceImages.get(0));
                         }
@@ -1041,13 +1044,14 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                 String i2vPromptZh = "";
 
                 List<String> gridSourceImages = new ArrayList<>();
+                List<Integer> gridSourceImageIndices = new ArrayList<>();
                 JsonNode indicesNode = suggestion.path("source_image_indices");
-                if (indicesNode.isArray() && productImages != null) {
+                if (indicesNode.isArray()) {
                     for (JsonNode indexNode : indicesNode) {
                         int rawIdx = indexNode.asInt();
-                        // 1-based index 映射到 0-based index
-                        int imgIdx = rawIdx - 1;
-                        if (imgIdx >= 0 && imgIdx < productImages.size()) {
+                        gridSourceImageIndices.add(rawIdx);
+                        int imgIdx = rawIdx; // 0-based index
+                        if (productImages != null && imgIdx >= 0 && imgIdx < productImages.size()) {
                             gridSourceImages.add(productImages.get(imgIdx));
                         }
                     }
@@ -1069,6 +1073,7 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
                 frameDO.setGridImagePromptEn(gridImagePromptEn);
                 frameDO.setGridImagePromptZh(gridImagePromptZh);
                 frameDO.setGridSourceImages(gridSourceImages);
+                frameDO.setSourceImageIndices(gridSourceImageIndices);
 
                 frameDO.setStatus("0");
                 frameMapper.insert(frameDO);

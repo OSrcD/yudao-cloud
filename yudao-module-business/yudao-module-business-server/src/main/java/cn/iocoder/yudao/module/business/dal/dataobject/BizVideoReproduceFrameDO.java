@@ -73,6 +73,8 @@ public class BizVideoReproduceFrameDO extends BaseDO {
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> gridSourceImages;
     @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<Integer> sourceImageIndices;
+    @TableField(typeHandler = JacksonTypeHandler.class)
     private List<Integer> singleImageSourceIndices;
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> singleSourceImages;

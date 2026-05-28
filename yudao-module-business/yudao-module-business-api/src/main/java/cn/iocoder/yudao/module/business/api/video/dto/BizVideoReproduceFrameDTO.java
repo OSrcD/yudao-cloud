@@ -25,6 +25,7 @@ public class BizVideoReproduceFrameDTO {
     private String imagePromptZhCheck;
     private String originalPrompt;
     private java.util.List<String> gridSourceImages;
+    private java.util.List<Integer> sourceImageIndices;
     
     private java.util.List<Integer> singleImageSourceIndices;
     private java.util.List<String> singleSourceImages;
