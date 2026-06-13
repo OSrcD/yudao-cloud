@@ -695,6 +695,24 @@ public class BizAiVideoReproduceServiceImpl implements BizAiVideoReproduceServic
         AppAiVideoReproduceTaskDetailRespVO respVO = BeanUtil.toBean(taskDTO, AppAiVideoReproduceTaskDetailRespVO.class);
         respVO.setProductImages(taskDTO.getProductImages());
 
+        // 为了兼容老的任务（数据库中字段为 null，但 resultJson 中可能存在）
+        if (cn.hutool.core.util.StrUtil.isNotEmpty(taskDTO.getResultJson())) {
+            try {
+                JsonNode root = objectMapper.readTree(taskDTO.getResultJson());
+                if (respVO.getUnitsTitle() == null && root.has("units_title")) {
+                    respVO.setUnitsTitle(root.path("units_title").asText());
+                }
+                if (respVO.getUnitsSpokenText() == null && root.has("units_spoken_text")) {
+                    respVO.setUnitsSpokenText(root.path("units_spoken_text").asText());
+                }
+                if (respVO.getUnitsGlobalTags() == null && root.has("units_global_tags")) {
+                    respVO.setUnitsGlobalTags(objectMapper.convertValue(root.path("units_global_tags"), new TypeReference<List<String>>() {}));
+                }
+            } catch (Exception e) {
+                log.error("尝试从 resultJson 恢复老任务的 units 字段失败", e);
+            }
+        }
+
         java.util.List<BizVideoReproduceFrameDTO> frameDTOs = bizVideoReproduceApi.getVideoReproduceFrameListByTaskId(taskId);
         if (cn.hutool.core.collection.CollUtil.isNotEmpty(frameDTOs)) {
             java.util.List<AppAiVideoReproduceTaskDetailRespVO.AppAiVideoReproduceFrameRespVO> frames = new java.util.ArrayList<>();

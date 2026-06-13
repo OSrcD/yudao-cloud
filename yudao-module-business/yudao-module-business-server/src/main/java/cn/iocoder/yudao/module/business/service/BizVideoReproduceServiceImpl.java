@@ -790,6 +790,19 @@ public class BizVideoReproduceServiceImpl implements BizVideoReproduceService {
             BizVideoReproduceTaskDO task = taskMapper.selectById(taskId);
             task.setResultJson(resultJson);
 
+            JsonNode unitsTitleNode = root.path("units_title");
+            if (!unitsTitleNode.isMissingNode() && !unitsTitleNode.isNull()) {
+                task.setUnitsTitle(unitsTitleNode.asText());
+            }
+            JsonNode unitsSpokenTextNode = root.path("units_spoken_text");
+            if (!unitsSpokenTextNode.isMissingNode() && !unitsSpokenTextNode.isNull()) {
+                task.setUnitsSpokenText(unitsSpokenTextNode.asText());
+            }
+            JsonNode unitsGlobalTagsNode = root.path("units_global_tags");
+            if (!unitsGlobalTagsNode.isMissingNode() && !unitsGlobalTagsNode.isNull()) {
+                task.setUnitsGlobalTags(objectMapper.convertValue(unitsGlobalTagsNode, new TypeReference<List<String>>() {}));
+            }
+
             boolean isFission = (task.getProductImages() != null && !task.getProductImages().isEmpty());
 
             if (isFission) {

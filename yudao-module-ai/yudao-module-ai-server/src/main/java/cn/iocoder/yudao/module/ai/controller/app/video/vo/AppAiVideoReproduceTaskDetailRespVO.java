@@ -38,6 +38,15 @@ public class AppAiVideoReproduceTaskDetailRespVO {
     @Schema(description = "累计消耗积分")
     private Integer totalPointUsed;
 
+    @Schema(description = "视频标题")
+    private String unitsTitle;
+
+    @Schema(description = "配音口播文案")
+    private String unitsSpokenText;
+
+    @Schema(description = "全局标签")
+    private List<String> unitsGlobalTags;
+
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime createTime;
 

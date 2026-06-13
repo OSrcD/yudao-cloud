@@ -45,6 +45,10 @@ public class BizVideoReproduceTaskDO extends BaseDO {
     private LocalDateTime payTime;
     private String combinedVideoUrl;
     private String remark;
+    private String unitsTitle;
+    private String unitsSpokenText;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> unitsGlobalTags;
     /**
      * 执行模式
      */
