@@ -26,12 +26,9 @@ public class BizVideoReproduceTaskDTO {
     private LocalDateTime createTime;
     private String execMode;
 
-    @Schema(description = "视频标题")
     private String unitsTitle;
 
-    @Schema(description = "配音口播文案")
     private String unitsSpokenText;
 
-    @Schema(description = "全局标签")
     private List<String> unitsGlobalTags;
 }

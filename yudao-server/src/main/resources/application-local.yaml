@@ -272,3 +272,12 @@ spring:
             model-pro: gemini-3.1-pro-preview
             model: gemini-3-flash-preview
             temperature: 0.7
+
+
+yudao:
+  ai:
+    ffmpeg-path: D:\\CuiMaoZhi\\Downloads\\ffmpeg-master-latest-win64-gpl-shared\\bin\\ffmpeg.exe
+
+business:
+  ffmpeg-path: D:\\CuiMaoZhi\\Downloads\\ffmpeg-master-latest-win64-gpl-shared\\bin\\ffmpeg.exe
+
