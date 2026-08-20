@@ -184,6 +184,12 @@ spring:
                 - Path=/admin-api/ai/**
               filters:
                 - RewritePath=/admin-api/ai/v3/api-docs, /v3/api-docs # 配置，保证转发到 /v3/api-docs
+            - id: ai-app-api # 用户 App AI（视频复刻 / 对话 / 角色）
+              uri: grayLb://ai-server
+              predicates:
+                - Path=/app-api/ai/**
+              filters:
+                - RewritePath=/app-api/ai/v3/api-docs, /v3/api-docs
             - id: ai-mcp-server # 路由的编号（MCP Server）
               uri: grayLb://ai-server
               predicates: # 断言，作为路由的匹配条件，对应 RouteDefinition 数组

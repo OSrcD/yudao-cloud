@@ -20,6 +20,7 @@ import cn.iocoder.yudao.module.ai.service.chat.AiChatMessageService;
 import cn.iocoder.yudao.module.ai.service.knowledge.AiKnowledgeDocumentService;
 import cn.iocoder.yudao.module.ai.service.knowledge.AiKnowledgeSegmentService;
 import cn.iocoder.yudao.module.ai.service.model.AiChatRoleService;
+import cn.iocoder.yudao.module.member.api.vip.MemberVipApi;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,16 +56,20 @@ public class AppAiChatMessageController {
     private AiKnowledgeSegmentService knowledgeSegmentService;
     @Resource
     private AiKnowledgeDocumentService knowledgeDocumentService;
+    @Resource
+    private MemberVipApi memberVipApi;
 
     @Operation(summary = "发送消息（段式）", description = "一次性返回，响应较慢")
     @PostMapping("/send")
     public CommonResult<AiChatMessageSendRespVO> sendMessage(@Valid @RequestBody AiChatMessageSendReqVO sendReqVO) {
+        memberVipApi.validateVip(getLoginUserId()).checkError();
         return success(chatMessageService.sendMessage(sendReqVO, getLoginUserId()));
     }
 
     @Operation(summary = "发送消息（流式）", description = "流式返回，响应较快")
     @PostMapping(value = "/send-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<CommonResult<AiChatMessageSendRespVO>> sendChatMessageStream(@Valid @RequestBody AiChatMessageSendReqVO sendReqVO) {
+        memberVipApi.validateVip(getLoginUserId()).checkError();
         return chatMessageService.sendChatMessageStream(sendReqVO, getLoginUserId());
     }
 

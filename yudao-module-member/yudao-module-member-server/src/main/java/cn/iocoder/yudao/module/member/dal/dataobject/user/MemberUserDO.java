@@ -142,4 +142,15 @@ public class MemberUserDO extends TenantBaseDO {
      */
     private Long groupId;
 
+    // ========== VIP 权益 ==========
+
+    /**
+     * VIP 到期时间（试用与付费共用）
+     */
+    private LocalDateTime vipExpireTime;
+    /**
+     * 是否已发放过试用
+     */
+    private Boolean vipTrialUsed;
+
 }

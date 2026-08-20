@@ -42,6 +42,14 @@ public interface AiChatConversationService {
     List<AiChatConversationDO> getChatConversationListByUserId(Long userId);
 
     /**
+     * 管理端：获得最近全部聊天对话（含会员 App 产生的会话）
+     *
+     * @param limit 条数上限
+     * @return 聊天对话列表
+     */
+    List<AiChatConversationDO> getChatConversationListAll(int limit);
+
+    /**
      * 获得聊天对话
      *
      * @param id 编号

@@ -39,7 +39,7 @@ public class XhsNoteCommentPageReqVO extends PageParam {
     @Schema(description = "是否作者：0-否，1-是")
     private Integer isAuthor;
 
-    @Schema(description = "组合排序字段，例如：commentTime:desc")
+    @Schema(description = "组合排序字段，例如：commentTime:desc,createTime:asc")
     private String sortFields;
 
 }

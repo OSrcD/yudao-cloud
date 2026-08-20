@@ -50,6 +50,8 @@ public class MemberUserController {
     private MemberGroupService memberGroupService;
     @Resource
     private MemberPointRecordService memberPointRecordService;
+    @Resource
+    private cn.iocoder.yudao.module.member.service.vip.MemberVipService memberVipService;
 
     @PutMapping("/update")
     @Operation(summary = "更新会员用户")
@@ -83,6 +85,14 @@ public class MemberUserController {
         return success(true);
     }
 
+    @PutMapping("/update-vip")
+    @Operation(summary = "更新会员用户 VIP")
+    @PreAuthorize("@ss.hasPermission('member:user:update-vip')")
+    public CommonResult<Boolean> updateUserVip(@Valid @RequestBody MemberUserUpdateVipReqVO updateReqVO) {
+        memberVipService.updateUserVip(updateReqVO);
+        return success(true);
+    }
+
     @GetMapping("/get")
     @Operation(summary = "获得会员用户")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
@@ -93,6 +103,8 @@ public class MemberUserController {
             return success(null);
         }
         MemberUserRespVO userVO = MemberUserConvert.INSTANCE.convert03(user);
+        userVO.setVipActive(user.getVipExpireTime() != null
+                && user.getVipExpireTime().isAfter(java.time.LocalDateTime.now()));
         if (user.getLevelId() != null) {
             MemberLevelDO level = memberLevelService.getLevel(userVO.getId());
             if (level != null) {

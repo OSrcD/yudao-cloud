@@ -1,7 +1,6 @@
 package cn.iocoder.yudao.module.ai.controller.admin.chat;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.ObjUtil;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.collection.MapUtils;
@@ -68,13 +67,13 @@ public class AiChatMessageController {
         return chatMessageService.sendChatMessageStream(sendReqVO, getLoginUserId());
     }
 
-    @Operation(summary = "获得指定对话的消息列表")
+    @Operation(summary = "获得指定对话的消息列表", description = "管理端可查看任意用户会话消息")
     @GetMapping("/list-by-conversation-id")
     @Parameter(name = "conversationId", required = true, description = "对话编号", example = "1024")
     public CommonResult<List<AiChatMessageRespVO>> getChatMessageListByConversationId(
             @RequestParam("conversationId") Long conversationId) {
         AiChatConversationDO conversation = chatConversationService.getChatConversation(conversationId);
-        if (conversation == null || ObjUtil.notEqual(conversation.getUserId(), getLoginUserId())) {
+        if (conversation == null) {
             return success(Collections.emptyList());
         }
         // 1. 获取消息列表

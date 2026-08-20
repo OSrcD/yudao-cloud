@@ -334,9 +334,23 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                                AiWebSearchResponse webSearchResponse,
                                AiModelDO model, AiChatMessageSendReqVO sendReqVO) {
         List<Message> chatMessages = new ArrayList<>();
-        // 1.1 System Context 角色设定
+        // 1.1 System Context 角色设定（真正发给大模型前）
         if (StrUtil.isNotBlank(conversation.getSystemMessage())) {
-            chatMessages.add(new SystemMessage(conversation.getSystemMessage()));
+            String systemMessage = conversation.getSystemMessage();
+            chatMessages.add(new SystemMessage(systemMessage));
+            log.info("[调用大模型][已填入系统提示词] conversationId={}, roleId={}, modelId={}, systemMessageLength={}, systemMessage={}",
+                    conversation.getId(),
+                    conversation.getRoleId(),
+                    conversation.getModelId(),
+                    systemMessage.length(),
+                    systemMessage);
+        } else {
+            log.warn("[调用大模型][未填入系统提示词] conversationId={}, roleId={}, modelId={}, userId={}, userType={}",
+                    conversation.getId(),
+                    conversation.getRoleId(),
+                    conversation.getModelId(),
+                    conversation.getUserId(),
+                    conversation.getUserType());
         }
 
         // 1.2 历史 history message 历史消息

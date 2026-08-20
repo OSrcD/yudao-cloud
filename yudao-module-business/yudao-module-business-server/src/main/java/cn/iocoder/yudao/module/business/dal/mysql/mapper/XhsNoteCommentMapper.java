@@ -38,6 +38,9 @@ public interface XhsNoteCommentMapper extends BaseMapperX<XhsNoteCommentDO> {
                 if ("commentTime".equals(field)) {
                     query.orderBy(true, isAsc, XhsNoteCommentDO::getCommentTime);
                     hasMultiSort = true;
+                } else if ("createTime".equals(field)) {
+                    query.orderBy(true, isAsc, XhsNoteCommentDO::getCreateTime);
+                    hasMultiSort = true;
                 }
             }
         }

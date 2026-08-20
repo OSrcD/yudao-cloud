@@ -20,6 +20,9 @@ public class AiChatConversationRespVO implements VO {
     @Schema(description = "用户编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "2048")
     private Long userId;
 
+    @Schema(description = "用户类型：1=管理员 2=会员", example = "2")
+    private Integer userType;
+
     @Schema(description = "对话标题", requiredMode = Schema.RequiredMode.REQUIRED, example = "我是一个标题")
     private String title;
 

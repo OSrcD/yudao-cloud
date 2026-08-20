@@ -15,6 +15,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.Mappings;
 import org.mapstruct.factory.Mappers;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -61,6 +62,8 @@ public interface MemberUserConvert {
             user.setTagNames(convertList(user.getTagIds(), tagMap::get));
             user.setLevelName(levelMap.get(user.getLevelId()));
             user.setGroupName(groupMap.get(user.getGroupId()));
+            user.setVipActive(user.getVipExpireTime() != null
+                    && user.getVipExpireTime().isAfter(LocalDateTime.now()));
         });
         return result;
     }

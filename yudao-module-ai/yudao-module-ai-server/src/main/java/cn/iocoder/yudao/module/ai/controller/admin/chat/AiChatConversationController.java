@@ -1,7 +1,6 @@
 package cn.iocoder.yudao.module.ai.controller.admin.chat;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.ObjUtil;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
@@ -54,22 +53,20 @@ public class AiChatConversationController {
     }
 
     @GetMapping("/my-list")
-    @Operation(summary = "获得【我的】聊天对话列表")
+    @Operation(summary = "获得聊天对话列表", description = "管理端返回全部最近会话（含会员 App），便于审计价值截流等")
     @TransMethodResult
     public CommonResult<List<AiChatConversationRespVO>> getChatConversationMyList() {
-        List<AiChatConversationDO> list = chatConversationService.getChatConversationListByUserId(getLoginUserId());
+        // 管理员：看全部（含 MEMBER App create-my）；不再按当前 admin userId 过滤
+        List<AiChatConversationDO> list = chatConversationService.getChatConversationListAll(500);
         return success(BeanUtils.toBean(list, AiChatConversationRespVO.class));
     }
 
     @GetMapping("/get-my")
-    @Operation(summary = "获得【我的】聊天对话")
+    @Operation(summary = "获得聊天对话", description = "管理端可查看任意用户会话")
     @Parameter(name = "id", required = true, description = "对话编号", example = "1024")
     @TransMethodResult
     public CommonResult<AiChatConversationRespVO> getChatConversationMy(@RequestParam("id") Long id) {
         AiChatConversationDO conversation = chatConversationService.getChatConversation(id);
-        if (conversation != null && ObjUtil.notEqual(conversation.getUserId(), getLoginUserId())) {
-            conversation = null;
-        }
         return success(BeanUtils.toBean(conversation, AiChatConversationRespVO.class));
     }
 

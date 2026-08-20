@@ -55,4 +55,15 @@ public interface ErrorCodeConstants {
     ErrorCode GROUP_NOT_EXISTS = new ErrorCode(1_004_012_000, "用户分组不存在");
     ErrorCode GROUP_HAS_USER = new ErrorCode(1_004_012_001, "用户分组下存在用户，无法删除");
 
+    //========== VIP 会员 1-004-013-000 ==========
+    ErrorCode USER_VIP_EXPIRED = new ErrorCode(1_004_013_000, "会员已过期，请先开通会员");
+    ErrorCode VIP_PACKAGE_NOT_EXISTS = new ErrorCode(1_004_013_001, "会员套餐不存在");
+    ErrorCode VIP_PACKAGE_DISABLE = new ErrorCode(1_004_013_002, "会员套餐已禁用");
+    ErrorCode VIP_ORDER_NOT_FOUND = new ErrorCode(1_004_013_003, "会员订单不存在");
+    ErrorCode VIP_ORDER_UPDATE_PAID_FAIL_PAY_ORDER_ID_ERROR = new ErrorCode(1_004_013_004, "会员订单更新支付状态失败，支付单编号不匹配");
+    ErrorCode VIP_ORDER_UPDATE_PAID_FAIL_PAY_ORDER_STATUS_NOT_SUCCESS = new ErrorCode(1_004_013_005, "会员订单更新支付状态失败，支付单状态不是【支付成功】状态");
+    ErrorCode VIP_ORDER_UPDATE_PAID_FAIL_PAY_PRICE_NOT_MATCH = new ErrorCode(1_004_013_006, "会员订单更新支付状态失败，支付单金额不匹配");
+    ErrorCode VIP_ORDER_UPDATE_PAID_STATUS_NOT_UNPAID = new ErrorCode(1_004_013_007, "会员订单更新支付状态失败，订单不是【未支付】状态");
+    ErrorCode USER_VIP_UPDATE_PARAM_INVALID = new ErrorCode(1_004_013_008, "VIP 修改参数不正确");
+
 }

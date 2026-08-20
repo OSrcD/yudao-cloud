@@ -29,6 +29,15 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
                 .eq(AiChatConversationDO::getPinned, pinned));
     }
 
+    /**
+     * 管理端：最近全部会话（含管理员 + 会员 App），不按 userType 过滤
+     */
+    default List<AiChatConversationDO> selectListRecent(int limit) {
+        return selectList(new LambdaQueryWrapperX<AiChatConversationDO>()
+                .orderByDesc(AiChatConversationDO::getId)
+                .last("LIMIT " + Math.max(1, Math.min(limit, 1000))));
+    }
+
     default PageResult<AiChatConversationDO> selectChatConversationPage(AiChatConversationPageReqVO pageReqVO) {
         return selectPage(pageReqVO, new LambdaQueryWrapperX<AiChatConversationDO>()
                 .eqIfPresent(AiChatConversationDO::getUserId, pageReqVO.getUserId())

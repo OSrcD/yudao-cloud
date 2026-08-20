@@ -44,8 +44,7 @@ public interface XhsNoteCollectMapper extends BaseMapperX<XhsNoteCollectDO> {
         }
 
         if (Boolean.TRUE.equals(reqVO.getForCommentScrape())) {
-            query.gt(XhsNoteCollectDO::getCommentsCount, 0);
-            query.like(XhsNoteCollectDO::getPcShareLink, "😆");
+            // 评论采集改走 token / noteUrl，不要求 PC 分享链接，也不限制评论数
             query.orderByAsc(XhsNoteCollectDO::getLastCommentCollectTime);
             query.orderByAsc(XhsNoteCollectDO::getId);
             return selectPage(reqVO, query);

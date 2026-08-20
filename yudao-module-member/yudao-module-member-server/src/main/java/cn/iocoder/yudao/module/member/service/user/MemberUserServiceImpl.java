@@ -64,6 +64,9 @@ public class MemberUserServiceImpl implements MemberUserService {
     @Resource
     private MemberUserProducer memberUserProducer;
 
+    @Resource
+    private cn.iocoder.yudao.module.member.service.vip.MemberVipService memberVipService;
+
     @Override
     public MemberUserDO getUserByMobile(String mobile) {
         return memberUserMapper.selectByMobile(mobile);
@@ -107,6 +110,8 @@ public class MemberUserServiceImpl implements MemberUserService {
             // 昵称为空时，随机一个名字，避免一些依赖 nickname 的逻辑报错，或者有点丑。例如说，短信发送有昵称时~
             user.setNickname("用户" + RandomUtil.randomNumbers(6));
         }
+        // 新用户发放 3 天 VIP 试用
+        memberVipService.fillTrialOnCreate(user);
         memberUserMapper.insert(user);
 
         // 发送 MQ 消息：用户创建

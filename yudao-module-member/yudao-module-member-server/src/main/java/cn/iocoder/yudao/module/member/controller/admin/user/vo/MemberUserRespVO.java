@@ -49,4 +49,15 @@ public class MemberUserRespVO extends MemberUserBaseVO {
     @Schema(description = "用户经验值", requiredMode  = Schema.RequiredMode.REQUIRED, example = "200")
     private Integer experience;
 
+    // ========== VIP 权益 ==========
+
+    @Schema(description = "VIP 到期时间")
+    private LocalDateTime vipExpireTime;
+
+    @Schema(description = "是否已发放过试用", example = "true")
+    private Boolean vipTrialUsed;
+
+    @Schema(description = "VIP 是否有效", example = "true")
+    private Boolean vipActive;
+
 }
