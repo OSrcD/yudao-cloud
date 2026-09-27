@@ -68,4 +68,5 @@ public interface ErrorCodeConstants {
     ErrorCode AI_POINT_NOT_ENOUGH = new ErrorCode(1_040_012_000, "AI 算力积分不足");
     ErrorCode AI_BALANCE_NOT_ENOUGH = new ErrorCode(1_040_012_001, "账户余额不足，请先充值");
 
+
 }

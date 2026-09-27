@@ -110,8 +110,8 @@ public class MemberUserServiceImpl implements MemberUserService {
             // 昵称为空时，随机一个名字，避免一些依赖 nickname 的逻辑报错，或者有点丑。例如说，短信发送有昵称时~
             user.setNickname("用户" + RandomUtil.randomNumbers(6));
         }
-        // 新用户发放 3 天 VIP 试用
-        memberVipService.fillTrialOnCreate(user);
+        // 新用户发放 3 天 VIP 试用 (已取消)
+        // memberVipService.fillTrialOnCreate(user);
         memberUserMapper.insert(user);
 
         // 发送 MQ 消息：用户创建
@@ -190,10 +190,9 @@ public class MemberUserServiceImpl implements MemberUserService {
     public void updateUserPassword(Long userId, AppMemberUserUpdatePasswordReqVO reqVO) {
         // 检测用户是否存在
         MemberUserDO user = validateUserExists(userId);
-        // 校验验证码
-        smsCodeApi.useSmsCode(new SmsCodeUseReqDTO().setMobile(user.getMobile()).setCode(reqVO.getCode())
-                .setScene(SmsSceneEnum.MEMBER_UPDATE_PASSWORD.getScene()).setUsedIp(getClientIP())).checkError();
-
+        // 校验验证码 (用户要求取消)
+        // smsCodeApi.useSmsCode(new SmsCodeUseReqDTO().setMobile(user.getMobile()).setCode(reqVO.getCode())
+        //         .setScene(SmsSceneEnum.MEMBER_UPDATE_PASSWORD.getScene()).setUsedIp(getClientIP())).checkError();
         // 更新用户密码
         memberUserMapper.updateById(MemberUserDO.builder().id(userId)
                 .password(passwordEncoder.encode(reqVO.getPassword())).build());

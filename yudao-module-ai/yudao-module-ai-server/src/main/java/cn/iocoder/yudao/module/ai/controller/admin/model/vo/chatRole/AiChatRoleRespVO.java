@@ -61,6 +61,18 @@ public class AiChatRoleRespVO implements VO {
     @Schema(description = "状态", example = "1")
     private Integer status;
 
+    @Schema(description = "适用终端（APP/PC/ALL）", example = "APP")
+    private String clientType;
+
+    @Schema(description = "自定义 API Key（直连大模型密钥）", example = "sk-xxx")
+    private String customApiKey;
+
+    @Schema(description = "引用的官方模板角色编号", example = "33")
+    private Long templateRoleId;
+
+    @Schema(description = "业务信息 JSON（包含行业、身份、主营业务等）")
+    private String businessInfo;
+
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime createTime;
 

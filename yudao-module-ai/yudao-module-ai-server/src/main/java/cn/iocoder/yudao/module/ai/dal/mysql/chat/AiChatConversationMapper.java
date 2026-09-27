@@ -18,15 +18,35 @@ import java.util.List;
 public interface AiChatConversationMapper extends BaseMapperX<AiChatConversationDO> {
 
     default List<AiChatConversationDO> selectListByUserId(Long userId) {
-        return selectList(AiChatConversationDO::getUserId, userId,
-                AiChatConversationDO::getUserType, cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType());
+        Integer userType = null;
+        cn.iocoder.yudao.framework.security.core.LoginUser loginUser = cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUser();
+        if (loginUser != null && loginUser.getUserType() != null) {
+            userType = loginUser.getUserType();
+        } else {
+            userType = cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType();
+        }
+        if (userType != null) {
+            return selectList(AiChatConversationDO::getUserId, userId,
+                    AiChatConversationDO::getUserType, userType);
+        }
+        return selectList(AiChatConversationDO::getUserId, userId);
     }
 
     default List<AiChatConversationDO> selectListByUserIdAndPinned(Long userId, boolean pinned) {
-        return selectList(new LambdaQueryWrapperX<AiChatConversationDO>()
+        Integer userType = null;
+        cn.iocoder.yudao.framework.security.core.LoginUser loginUser = cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUser();
+        if (loginUser != null && loginUser.getUserType() != null) {
+            userType = loginUser.getUserType();
+        } else {
+            userType = cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType();
+        }
+        LambdaQueryWrapperX<AiChatConversationDO> wrapper = new LambdaQueryWrapperX<AiChatConversationDO>()
                 .eq(AiChatConversationDO::getUserId, userId)
-                .eq(AiChatConversationDO::getUserType, cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
-                .eq(AiChatConversationDO::getPinned, pinned));
+                .eq(AiChatConversationDO::getPinned, pinned);
+        if (userType != null) {
+            wrapper.eq(AiChatConversationDO::getUserType, userType);
+        }
+        return selectList(wrapper);
     }
 
     /**

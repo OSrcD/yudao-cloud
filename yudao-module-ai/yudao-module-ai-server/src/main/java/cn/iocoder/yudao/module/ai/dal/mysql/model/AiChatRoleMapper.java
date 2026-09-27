@@ -8,6 +8,8 @@ import cn.iocoder.yudao.module.ai.controller.admin.model.vo.chatRole.AiChatRoleP
 import cn.iocoder.yudao.module.ai.dal.dataobject.model.AiChatRoleDO;
 import org.apache.ibatis.annotations.Mapper;
 
+import cn.hutool.core.util.StrUtil;
+
 import java.util.List;
 
 /**
@@ -23,13 +25,19 @@ public interface AiChatRoleMapper extends BaseMapperX<AiChatRoleDO> {
                 .likeIfPresent(AiChatRoleDO::getName, reqVO.getName())
                 .eqIfPresent(AiChatRoleDO::getCategory, reqVO.getCategory())
                 .eqIfPresent(AiChatRoleDO::getPublicStatus, reqVO.getPublicStatus())
-                .orderByAsc(AiChatRoleDO::getSort));
+                .eqIfPresent(AiChatRoleDO::getClientType, reqVO.getClientType())
+                .orderByAsc(AiChatRoleDO::getSort)
+                .orderByDesc(AiChatRoleDO::getId));
     }
 
     default PageResult<AiChatRoleDO> selectPageByMy(AiChatRolePageReqVO reqVO, Long userId) {
         return selectPage(reqVO, new LambdaQueryWrapperX<AiChatRoleDO>()
                 .likeIfPresent(AiChatRoleDO::getName, reqVO.getName())
                 .eqIfPresent(AiChatRoleDO::getCategory, reqVO.getCategory())
+                // 适用端筛选：若指定为 APP，则匹配 client_type IN ('APP', 'ALL')，否则按指定值精准匹配
+                .inIfPresent(AiChatRoleDO::getClientType, "APP".equalsIgnoreCase(reqVO.getClientType())
+                        ? List.of("APP", "ALL")
+                        : (StrUtil.isNotEmpty(reqVO.getClientType()) ? List.of(reqVO.getClientType()) : null))
                 // 情况一：公开
                 .eq(Boolean.TRUE.equals(reqVO.getPublicStatus()), AiChatRoleDO::getPublicStatus, reqVO.getPublicStatus())
                 // 情况二：私有

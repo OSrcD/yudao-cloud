@@ -85,4 +85,16 @@ public class AiModelDO extends BaseDO {
      */
     private Integer maxContexts;
 
+    /**
+     * 适用终端
+     *
+     * 枚举：ALL 全部 / APP 移动端 / PC 网页端
+     */
+    private String clientType;
+
+    /**
+     * 是否默认模型
+     */
+    private Boolean isDefault;
+
 }

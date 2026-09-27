@@ -44,7 +44,7 @@ public class MediaPromptJob {
     @Resource
     private BizPromptCommentCompleteMapper bizPromptCommentCompleteMapper;
 
-    @Scheduled(cron = "0 * * * * ?")
+//    @Scheduled(cron = "0 * * * * ?")
     @TenantIgnore
     public void clearCompletedCommentsJob() {
         log.info("开始执行定期清理已用满评论账号的完成记录任务...");
@@ -72,7 +72,7 @@ public class MediaPromptJob {
         log.info("定期清理已用满评论任务执行结束");
     }
 
-    @Scheduled(cron = "0 0 1 * * ?") // 每天凌晨1点执行
+//    @Scheduled(cron = "0 0 1 * * ?") // 每天凌晨1点执行
     @TenantIgnore
     public void generateAICommentsJob() {
         log.info("开始执行 AI 评论自动生成任务...");

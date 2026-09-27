@@ -24,6 +24,7 @@ public interface AiChatMapper extends BaseMapperX<AiModelDO> {
                 .eq("type", type)
                 .eq("status", status)
                 .limitN(1)
+                .orderByDesc("is_default")
                 .orderByAsc("sort"));
     }
 
@@ -32,15 +33,27 @@ public interface AiChatMapper extends BaseMapperX<AiModelDO> {
                 .likeIfPresent(AiModelDO::getName, reqVO.getName())
                 .eqIfPresent(AiModelDO::getModel, reqVO.getModel())
                 .eqIfPresent(AiModelDO::getPlatform, reqVO.getPlatform())
+                .eqIfPresent(AiModelDO::getClientType, reqVO.getClientType())
+                .orderByDesc(AiModelDO::getIsDefault)
                 .orderByAsc(AiModelDO::getSort));
     }
 
     default List<AiModelDO> selectListByStatusAndType(Integer status, Integer type,
                                                       @Nullable String platform) {
+        return selectListByStatusAndType(status, type, platform, null);
+    }
+
+    default List<AiModelDO> selectListByStatusAndType(Integer status, Integer type,
+                                                      @Nullable String platform,
+                                                      @Nullable String clientType) {
         return selectList(new LambdaQueryWrapperX<AiModelDO>()
                 .eq(AiModelDO::getStatus, status)
                 .eq(AiModelDO::getType, type)
                 .eqIfPresent(AiModelDO::getPlatform, platform)
+                .inIfPresent(AiModelDO::getClientType, "APP".equalsIgnoreCase(clientType)
+                        ? List.of("APP")
+                        : (cn.hutool.core.util.StrUtil.isNotEmpty(clientType) ? List.of(clientType) : null))
+                .orderByDesc(AiModelDO::getIsDefault)
                 .orderByAsc(AiModelDO::getSort));
     }
 

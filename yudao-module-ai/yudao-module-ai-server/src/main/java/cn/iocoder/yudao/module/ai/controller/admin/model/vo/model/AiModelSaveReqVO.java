@@ -56,4 +56,10 @@ public class AiModelSaveReqVO {
     @Schema(description = "上下文的最大 Message 数量", example = "8192")
     private Integer maxContexts;
 
+    @Schema(description = "适用终端（APP/PC/ALL）", example = "ALL")
+    private String clientType;
+
+    @Schema(description = "是否默认模型", example = "true")
+    private Boolean isDefault;
+
 }

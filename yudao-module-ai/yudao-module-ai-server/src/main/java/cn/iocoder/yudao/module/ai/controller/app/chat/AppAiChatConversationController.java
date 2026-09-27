@@ -68,7 +68,13 @@ public class AppAiChatConversationController {
     @TransMethodResult
     public CommonResult<List<AiChatConversationRespVO>> getChatConversationMyList() {
         List<AiChatConversationDO> list = chatConversationService.getChatConversationListByUserId(getLoginUserId());
-        return success(BeanUtils.toBean(list, AiChatConversationRespVO.class));
+        if (CollUtil.isEmpty(list)) {
+            return success(java.util.Collections.emptyList());
+        }
+        Map<Long, Integer> messageCountMap = chatMessageService.getChatMessageCountMap(
+                convertList(list, AiChatConversationDO::getId));
+        return success(BeanUtils.toBean(list, AiChatConversationRespVO.class,
+                conversation -> conversation.setMessageCount(messageCountMap.getOrDefault(conversation.getId(), 0))));
     }
 
     @GetMapping("/get-my")

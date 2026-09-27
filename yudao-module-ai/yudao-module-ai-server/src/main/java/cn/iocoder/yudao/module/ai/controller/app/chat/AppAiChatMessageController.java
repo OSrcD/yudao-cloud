@@ -21,6 +21,9 @@ import cn.iocoder.yudao.module.ai.service.knowledge.AiKnowledgeDocumentService;
 import cn.iocoder.yudao.module.ai.service.knowledge.AiKnowledgeSegmentService;
 import cn.iocoder.yudao.module.ai.service.model.AiChatRoleService;
 import cn.iocoder.yudao.module.member.api.vip.MemberVipApi;
+import cn.iocoder.yudao.module.member.api.user.MemberUserApi;
+import cn.iocoder.yudao.module.member.api.user.dto.MemberUserRespDTO;
+import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -58,11 +61,28 @@ public class AppAiChatMessageController {
     private AiKnowledgeDocumentService knowledgeDocumentService;
     @Resource
     private MemberVipApi memberVipApi;
+    @Resource
+    private MemberUserApi memberUserApi;
+
+    private void checkAiChatLimit(Long userId, String customApiKey) {
+        if (cn.hutool.core.util.StrUtil.isNotBlank(customApiKey)) {
+            return; // 使用自定义密钥，不限制次数
+        }
+        MemberUserRespDTO user = memberUserApi.getUser(userId).getCheckedData();
+        if (user != null) {
+            int maxCount = user.getAiChatMaxCount() != null ? user.getAiChatMaxCount() : 50;
+            Long currentCount = chatMessageService.getMessageCountByUserId(userId);
+            if (currentCount != null && currentCount >= maxCount) {
+                throw ServiceExceptionUtil.exception0(400, "后台 AI 发送次数已达上限 (" + maxCount + "次)，请配置自定义密钥");
+            }
+        }
+    }
 
     @Operation(summary = "发送消息（段式）", description = "一次性返回，响应较慢")
     @PostMapping("/send")
     public CommonResult<AiChatMessageSendRespVO> sendMessage(@Valid @RequestBody AiChatMessageSendReqVO sendReqVO) {
         memberVipApi.validateVip(getLoginUserId()).checkError();
+        checkAiChatLimit(getLoginUserId(), sendReqVO.getCustomApiKey());
         return success(chatMessageService.sendMessage(sendReqVO, getLoginUserId()));
     }
 
@@ -70,6 +90,7 @@ public class AppAiChatMessageController {
     @PostMapping(value = "/send-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<CommonResult<AiChatMessageSendRespVO>> sendChatMessageStream(@Valid @RequestBody AiChatMessageSendReqVO sendReqVO) {
         memberVipApi.validateVip(getLoginUserId()).checkError();
+        checkAiChatLimit(getLoginUserId(), sendReqVO.getCustomApiKey());
         return chatMessageService.sendChatMessageStream(sendReqVO, getLoginUserId());
     }
 

@@ -142,6 +142,11 @@ public class MemberUserDO extends TenantBaseDO {
      */
     private Long groupId;
 
+    /**
+     * AI最大发送次数
+     */
+    private Integer aiChatMaxCount;
+
     // ========== VIP 权益 ==========
 
     /**

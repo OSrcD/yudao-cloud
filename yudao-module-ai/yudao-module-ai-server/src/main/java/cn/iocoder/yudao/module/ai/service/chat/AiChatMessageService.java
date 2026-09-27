@@ -97,4 +97,12 @@ public interface AiChatMessageService {
     Flux<CommonResult<AiChatMessageSendRespVO>> analyzeVideoAndGenerateScript(Long userId, String content, List<String> videoUrls,
                                                                               List<String> charImageUrls, List<String> productImageUrls) ;
 
+    /**
+     * 获取指定用户的消息发送总数
+     *
+     * @param userId 用户编号
+     * @return 发送总数
+     */
+    Long getMessageCountByUserId(Long userId);
+
 }

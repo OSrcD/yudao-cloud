@@ -17,4 +17,7 @@ public class AiChatRolePageReqVO extends PageParam {
     @Schema(description = "是否公开", example = "1")
     private Boolean publicStatus;
 
+    @Schema(description = "适用终端（APP/PC/ALL）", example = "APP")
+    private String clientType;
+
 }

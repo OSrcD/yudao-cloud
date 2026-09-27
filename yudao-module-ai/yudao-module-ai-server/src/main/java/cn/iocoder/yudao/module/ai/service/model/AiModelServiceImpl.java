@@ -28,6 +28,8 @@ import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,7 @@ public class AiModelServiceImpl implements AiModelService {
     private AiModelFactory modelFactory;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Long createModel(AiModelSaveReqVO createReqVO) {
         // 1. 校验
         AiPlatformEnum.validatePlatform(createReqVO.getPlatform());
@@ -62,10 +65,14 @@ public class AiModelServiceImpl implements AiModelService {
         // 2. 插入
         AiModelDO model = BeanUtils.toBean(createReqVO, AiModelDO.class);
         modelMapper.insert(model);
+        if (Boolean.TRUE.equals(createReqVO.getIsDefault())) {
+            setDefaultModel(model.getId());
+        }
         return model.getId();
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateModel(AiModelSaveReqVO updateReqVO) {
         // 1. 校验
         validateModelExists(updateReqVO.getId());
@@ -75,6 +82,25 @@ public class AiModelServiceImpl implements AiModelService {
         // 2. 更新
         AiModelDO updateObj = BeanUtils.toBean(updateReqVO, AiModelDO.class);
         modelMapper.updateById(updateObj);
+        if (Boolean.TRUE.equals(updateReqVO.getIsDefault())) {
+            setDefaultModel(updateReqVO.getId());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void setDefaultModel(Long id) {
+        AiModelDO model = validateModelExists(id);
+        // 将同类型同终端的其他模型 isDefault 置为 false
+        modelMapper.update(null, new LambdaUpdateWrapper<AiModelDO>()
+                .eq(AiModelDO::getType, model.getType())
+                .eq(AiModelDO::getClientType, model.getClientType())
+                .set(AiModelDO::getIsDefault, false));
+        // 将当前模型置为默认，并将 sort 设为 1
+        modelMapper.update(null, new LambdaUpdateWrapper<AiModelDO>()
+                .eq(AiModelDO::getId, id)
+                .set(AiModelDO::getIsDefault, true)
+                .set(AiModelDO::getSort, 1));
     }
 
     @Override
@@ -123,7 +149,12 @@ public class AiModelServiceImpl implements AiModelService {
 
     @Override
     public List<AiModelDO> getModelListByStatusAndType(Integer status, Integer type, String platform) {
-        return modelMapper.selectListByStatusAndType(status, type, platform);
+        return getModelListByStatusAndType(status, type, platform, null);
+    }
+
+    @Override
+    public List<AiModelDO> getModelListByStatusAndType(Integer status, Integer type, String platform, String clientType) {
+        return modelMapper.selectListByStatusAndType(status, type, platform, clientType);
     }
 
     // ========== 与 Spring AI 集成 ==========
@@ -134,6 +165,14 @@ public class AiModelServiceImpl implements AiModelService {
         AiApiKeyDO apiKey = apiKeyService.validateApiKey(model.getKeyId());
         AiPlatformEnum platform = AiPlatformEnum.validatePlatform(apiKey.getPlatform());
         return modelFactory.getOrCreateChatModel(platform, apiKey.getApiKey(), apiKey.getUrl());
+    }
+
+    @Override
+    public ChatModel getChatModelByApiKey(Long id, String customApiKey) {
+        AiModelDO model = validateModel(id);
+        AiApiKeyDO apiKey = apiKeyService.validateApiKey(model.getKeyId());
+        AiPlatformEnum platform = AiPlatformEnum.validatePlatform(apiKey.getPlatform());
+        return modelFactory.getOrCreateChatModel(platform, customApiKey, apiKey.getUrl());
     }
 
     @Override

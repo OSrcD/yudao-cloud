@@ -155,7 +155,12 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
         // 1.2 校验模型
         AiModelDO model = modalService.validateModel(conversation.getModelId());
-        ChatModel chatModel = modalService.getChatModel(model.getId());
+        ChatModel chatModel;
+        if (cn.hutool.core.util.StrUtil.isNotBlank(sendReqVO.getCustomApiKey())) {
+            chatModel = modalService.getChatModelByApiKey(model.getId(), sendReqVO.getCustomApiKey());
+        } else {
+            chatModel = modalService.getChatModel(model.getId());
+        }
 
         // 2.1 知识库召回
         List<AiKnowledgeSegmentSearchRespBO> knowledgeSegments = recallKnowledgeSegment(
@@ -212,7 +217,12 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
         // 1.2 校验模型
         AiModelDO model = modalService.validateModel(conversation.getModelId());
-        StreamingChatModel chatModel = modalService.getChatModel(model.getId());
+        StreamingChatModel chatModel;
+        if (cn.hutool.core.util.StrUtil.isNotBlank(sendReqVO.getCustomApiKey())) {
+            chatModel = (StreamingChatModel) modalService.getChatModelByApiKey(model.getId(), sendReqVO.getCustomApiKey());
+        } else {
+            chatModel = (StreamingChatModel) modalService.getChatModel(model.getId());
+        }
 
         // 2.1 知识库找回
         List<AiKnowledgeSegmentSearchRespBO> knowledgeSegments = recallKnowledgeSegment(
@@ -552,10 +562,20 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                                               List<AiKnowledgeSegmentSearchRespBO> knowledgeSegments,
                                               List<String> attachmentUrls,
                                               AiWebSearchResponse webSearchResponse) {
+        Integer userType = null;
+        cn.iocoder.yudao.framework.security.core.LoginUser loginUser = cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUser();
+        if (loginUser != null && loginUser.getUserType() != null) {
+            userType = loginUser.getUserType();
+        } else {
+            userType = cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType();
+        }
+        if (userType == null) {
+            userType = 2; // 默认会员 App 端
+        }
         AiChatMessageDO message = new AiChatMessageDO().setConversationId(conversationId).setReplyId(replyId)
                 .setModel(model.getModel()).setModelId(model.getId()).setUserId(userId).setRoleId(roleId)
                 .setType(messageType.getValue()).setContent(content).setUseContext(useContext)
-                .setUserType(cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
+                .setUserType(userType)
                 .setSegmentIds(convertList(knowledgeSegments, AiKnowledgeSegmentSearchRespBO::getId))
                 .setAttachmentUrls(attachmentUrls);
         if (webSearchResponse != null) {
@@ -770,6 +790,9 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
 
 
 
-    //
+    @Override
+    public Long getMessageCountByUserId(Long userId) {
+        return chatMessageMapper.selectCountByUserId(userId);
+    }
 
 }

@@ -108,4 +108,26 @@ public class AiChatRoleDO extends BaseDO {
      */
     private Integer status;
 
+    /**
+     * 适用终端
+     *
+     * 枚举：ALL 全部 / APP 移动端 / PC 网页端
+     */
+    private String clientType;
+
+    /**
+     * 自定义 API Key（直连大模型密钥）
+     */
+    private String customApiKey;
+
+    /**
+     * 引用的官方模板角色编号
+     */
+    private Long templateRoleId;
+
+    /**
+     * 业务信息 JSON（包含行业、身份、主营业务、目标客户、客户痛点、核心优势、截流目标、评论长度、营销强度）
+     */
+    private String businessInfo;
+
 }

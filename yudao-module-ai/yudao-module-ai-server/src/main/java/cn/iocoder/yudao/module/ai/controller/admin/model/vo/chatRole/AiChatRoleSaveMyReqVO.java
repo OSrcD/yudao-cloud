@@ -14,6 +14,9 @@ public class AiChatRoleSaveMyReqVO {
     @Schema(description = "角色编号", example = "32746")
     private Long id;
 
+    @Schema(description = "模型编号", example = "17640")
+    private Long modelId;
+
     @Schema(description = "角色名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "李四")
     @NotEmpty(message = "角色名称不能为空")
     private String name;
@@ -23,13 +26,21 @@ public class AiChatRoleSaveMyReqVO {
     @URL(message = "角色头像必须是 URL 格式")
     private String avatar;
 
+    @Schema(description = "角色分类", example = "APP截流")
+    private String category;
+
     @Schema(description = "角色描述", requiredMode = Schema.RequiredMode.REQUIRED, example = "你说的对")
     @NotEmpty(message = "角色描述不能为空")
     private String description;
 
-    @Schema(description = "角色设定", requiredMode = Schema.RequiredMode.REQUIRED, example = "现在开始你扮演一位程序员，你是一名优秀的程序员，具有很强的逻辑思维能力，总能高效的解决问题")
-    @NotEmpty(message = "角色设定不能为空")
+    @Schema(description = "角色设定", example = "现在开始你扮演一位程序员，你是一名优秀的程序员，具有很强的逻辑思维能力，总能高效的解决问题")
     private String systemMessage;
+
+    @Schema(description = "引用的官方模板角色编号", example = "33")
+    private Long templateRoleId;
+
+    @Schema(description = "业务信息 JSON（包含行业、身份、主营业务等）")
+    private String businessInfo;
 
     @Schema(description = "引用的知识库编号列表", example = "1,2,3")
     private List<Long> knowledgeIds;
@@ -39,5 +50,11 @@ public class AiChatRoleSaveMyReqVO {
 
     @Schema(description = "引用的 MCP Client 名字列表", example = "filesystem")
     private List<String> mcpClientNames;
+
+    @Schema(description = "适用终端（APP/PC/ALL）", example = "APP")
+    private String clientType;
+
+    @Schema(description = "自定义 API Key（直连大模型密钥）", example = "sk-xxx")
+    private String customApiKey;
 
 }

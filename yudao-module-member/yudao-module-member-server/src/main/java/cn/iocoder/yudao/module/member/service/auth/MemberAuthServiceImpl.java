@@ -59,6 +59,10 @@ public class MemberAuthServiceImpl implements MemberAuthService {
     private SocialClientApi socialClientApi;
     @Resource
     private OAuth2TokenCommonApi oauth2TokenApi;
+    @Resource
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    @Resource
+    private cn.iocoder.yudao.module.member.dal.mysql.user.MemberUserMapper memberUserMapper;
 
     @Override
     public AppAuthLoginRespVO login(AppAuthLoginReqVO reqVO) {
@@ -78,10 +82,33 @@ public class MemberAuthServiceImpl implements MemberAuthService {
 
     @Override
     @Transactional
+    public AppAuthLoginRespVO register(AppAuthRegisterReqVO reqVO) {
+        // 1. 校验手机号是否已经被注册
+        MemberUserDO user = userService.getUserByMobile(reqVO.getMobile());
+        if (user != null) {
+            throw exception(AUTH_MOBILE_USED);
+        }
+
+        // 2. 创建用户
+        user = new MemberUserDO();
+        user.setMobile(reqVO.getMobile());
+        user.setPassword(passwordEncoder.encode(reqVO.getPassword()));
+        user.setStatus(CommonStatusEnum.ENABLE.getStatus());
+        user.setNickname("用户" + cn.hutool.core.util.RandomUtil.randomNumbers(6));
+        user.setRegisterIp(getClientIP());
+        user.setRegisterTerminal(getTerminal());
+        memberUserMapper.insert(user);
+
+        // 3. 记录登录日志，创建 Token 令牌
+        return createTokenAfterLoginSuccess(user, reqVO.getMobile(), LoginLogTypeEnum.LOGIN_MOBILE, null);
+    }
+
+    @Override
+    @Transactional
     public AppAuthLoginRespVO smsLogin(AppAuthSmsLoginReqVO reqVO) {
-        // 校验验证码
+        // 校验验证码 (Removed as per user request)
         String userIp = getClientIP();
-        smsCodeApi.useSmsCode(AuthConvert.INSTANCE.convert(reqVO, SmsSceneEnum.MEMBER_LOGIN.getScene(), userIp)).checkError();
+        // smsCodeApi.useSmsCode(AuthConvert.INSTANCE.convert(reqVO, SmsSceneEnum.MEMBER_LOGIN.getScene(), userIp)).checkError();
 
         // 获得获得注册用户
         MemberUserDO user = userService.createUserIfAbsent(reqVO.getMobile(), userIp, getTerminal());

@@ -50,6 +50,13 @@ public interface AiModelService {
     void deleteModel(Long id);
 
     /**
+     * 设置默认模型
+     *
+     * @param id 编号
+     */
+    void setDefaultModel(Long id);
+
+    /**
      * 获得模型
      *
      * @param id 编号
@@ -93,6 +100,19 @@ public interface AiModelService {
     List<AiModelDO> getModelListByStatusAndType(Integer status, Integer type,
                                                 @Nullable String platform);
 
+    /**
+     * 获得模型列表（支持终端筛选）
+     *
+     * @param status 状态
+     * @param type 类型
+     * @param platform 平台，允许空
+     * @param clientType 适用终端，允许空
+     * @return 模型列表
+     */
+    List<AiModelDO> getModelListByStatusAndType(Integer status, Integer type,
+                                                @Nullable String platform,
+                                                @Nullable String clientType);
+
     // ========== 与 Spring AI 集成 ==========
 
     /**
@@ -102,6 +122,15 @@ public interface AiModelService {
      * @return ChatModel 对象
      */
     ChatModel getChatModel(Long id);
+
+    /**
+     * 获得 ChatModel 对象（自定义密钥）
+     *
+     * @param id 编号
+     * @param apiKey 自定义API密钥
+     * @return ChatModel 对象
+     */
+    ChatModel getChatModelByApiKey(Long id, String apiKey);
 
     /**
      * 获得 ImageModel 对象

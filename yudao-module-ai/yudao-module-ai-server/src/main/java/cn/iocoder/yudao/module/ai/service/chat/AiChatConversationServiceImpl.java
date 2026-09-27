@@ -67,8 +67,18 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
         }
 
         // 2. 创建 AiChatConversationDO 聊天对话
+        Integer userType = null;
+        cn.iocoder.yudao.framework.security.core.LoginUser loginUser = cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUser();
+        if (loginUser != null && loginUser.getUserType() != null) {
+            userType = loginUser.getUserType();
+        } else {
+            userType = cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType();
+        }
+        if (userType == null) {
+            userType = 2; // 默认会员 App 端
+        }
         AiChatConversationDO conversation = new AiChatConversationDO().setUserId(userId).setPinned(false)
-                .setUserType(cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType())
+                .setUserType(userType)
                 .setModelId(model.getId()).setModel(model.getModel())
                 .setTemperature(model.getTemperature()).setMaxTokens(model.getMaxTokens()).setMaxContexts(model.getMaxContexts());
         if (role != null) {
@@ -104,7 +114,10 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
             updateObj.setPinnedTime(LocalDateTime.now());
         }
         if (model != null) {
-            updateObj.setModel(model.getModel());
+            updateObj.setModel(model.getModel())
+                    .setTemperature(model.getTemperature())
+                    .setMaxTokens(model.getMaxTokens())
+                    .setMaxContexts(model.getMaxContexts());
         }
         chatConversationMapper.updateById(updateObj);
     }

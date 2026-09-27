@@ -44,6 +44,12 @@ public class AiChatRoleSaveReqVO {
     @NotEmpty(message = "角色设定不能为空")
     private String systemMessage;
 
+    @Schema(description = "引用的官方模板角色编号", example = "33")
+    private Long templateRoleId;
+
+    @Schema(description = "业务信息 JSON（包含行业、身份、主营业务等）")
+    private String businessInfo;
+
     @Schema(description = "引用的知识库编号列表", example = "1,2,3")
     private List<Long> knowledgeIds;
 
@@ -61,5 +67,11 @@ public class AiChatRoleSaveReqVO {
     @NotNull(message = "状态不能为空")
     @InEnum(CommonStatusEnum.class)
     private Integer status;
+
+    @Schema(description = "适用终端（APP/PC/ALL）", example = "APP")
+    private String clientType;
+
+    @Schema(description = "自定义 API Key（直连大模型密钥）", example = "sk-xxx")
+    private String customApiKey;
 
 }

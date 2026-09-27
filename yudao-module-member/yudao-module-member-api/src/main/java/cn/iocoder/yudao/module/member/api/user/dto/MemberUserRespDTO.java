@@ -35,4 +35,7 @@ public class MemberUserRespDTO {
     @Schema(description = "积分", requiredMode = Schema.RequiredMode.REQUIRED, example = "886")
     private Integer point;
 
+    @Schema(description = "AI最大发送次数", example = "50")
+    private Integer aiChatMaxCount;
+
 }

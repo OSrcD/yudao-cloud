@@ -34,4 +34,7 @@ public class AiChatMessageSendReqVO {
     @Schema(description = "响应格式，例如 json_object", example = "json_object")
     private String responseFormat;
 
+    @Schema(description = "自定义API密钥", example = "sk-xxx")
+    private String customApiKey;
+
 }

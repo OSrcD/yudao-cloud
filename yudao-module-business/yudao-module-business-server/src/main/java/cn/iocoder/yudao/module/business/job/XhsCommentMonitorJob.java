@@ -37,7 +37,7 @@ public class XhsCommentMonitorJob {
      */
     private volatile LocalDateTime lastExecuteTime = LocalDateTime.now().minusMinutes(2);
 
-    @Scheduled(fixedDelay = 60000)
+//    @Scheduled(fixedDelay = 60000)
     public void execute() {
         try {
             doExecute();

@@ -62,4 +62,7 @@ public class MemberUserBaseVO {
     @Schema(description = "用户分组编号", example = "1")
     private Long groupId;
 
+    @Schema(description = "AI最大发送次数", example = "50")
+    private Integer aiChatMaxCount;
+
 }

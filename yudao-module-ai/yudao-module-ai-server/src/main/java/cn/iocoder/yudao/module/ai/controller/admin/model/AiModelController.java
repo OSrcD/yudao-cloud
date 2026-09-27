@@ -73,17 +73,31 @@ public class AiModelController {
         return success(BeanUtils.toBean(pageResult, AiModelRespVO.class));
     }
 
+    @PutMapping("/set-default")
+    @Operation(summary = "设为默认模型")
+    @Parameter(name = "id", description = "编号", required = true)
+    @PreAuthorize("@ss.hasPermission('ai:model:update')")
+    public CommonResult<Boolean> setDefaultModel(@RequestParam("id") Long id) {
+        modelService.setDefaultModel(id);
+        return success(true);
+    }
+
     @GetMapping("/simple-list")
     @Operation(summary = "获得模型列表")
     @Parameter(name = "type", description = "类型", required = true, example = "1")
     @Parameter(name = "platform", description = "平台", example = "midjourney")
+    @Parameter(name = "clientType", description = "适用终端（APP/PC/ALL）", example = "APP")
     public CommonResult<List<AiModelRespVO>> getModelSimpleList(
             @RequestParam("type") Integer type,
-            @RequestParam(value = "platform", required = false) String platform) {
+            @RequestParam(value = "platform", required = false) String platform,
+            @RequestParam(value = "clientType", required = false) String clientType) {
         List<AiModelDO> list = modelService.getModelListByStatusAndType(
-                CommonStatusEnum.ENABLE.getStatus(), type, platform);
+                CommonStatusEnum.ENABLE.getStatus(), type, platform, clientType);
         return success(convertList(list, model -> new AiModelRespVO().setId(model.getId())
-                .setName(model.getName()).setModel(model.getModel()).setPlatform(model.getPlatform())));
+                .setName(model.getName()).setModel(model.getModel()).setPlatform(model.getPlatform())
+                .setClientType(model.getClientType()).setMaxContexts(model.getMaxContexts())
+                .setSort(model.getSort())
+                .setIsDefault(Boolean.TRUE.equals(model.getIsDefault()) || (model.getSort() != null && model.getSort() == 1))));
     }
 
 }

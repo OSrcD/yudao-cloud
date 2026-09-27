@@ -71,4 +71,15 @@ public class AiChatConversationRespVO implements VO {
     @Schema(description = "消息数量", example = "20")
     private Integer messageCount;
 
+    // ========== 关联 user 信息 ==========
+
+    @Schema(description = "用户账号/用户名", example = "admin")
+    private String userName;
+
+    @Schema(description = "用户昵称", example = "小王")
+    private String userNickname;
+
+    @Schema(description = "用户手机号", example = "15601691300")
+    private String userMobile;
+
 }

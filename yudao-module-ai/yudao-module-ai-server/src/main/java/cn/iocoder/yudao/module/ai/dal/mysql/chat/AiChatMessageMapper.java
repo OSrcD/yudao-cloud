@@ -56,4 +56,9 @@ public interface AiChatMessageMapper extends BaseMapperX<AiChatMessageDO> {
                 .orderByDesc(AiChatMessageDO::getId));
     }
 
+    default Long selectCountByUserId(Long userId) {
+        return selectCount(new LambdaQueryWrapperX<AiChatMessageDO>()
+                .eq(AiChatMessageDO::getUserId, userId));
+    }
+
 }
