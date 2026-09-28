@@ -18,6 +18,14 @@ import java.util.List;
 public interface AiChatConversationMapper extends BaseMapperX<AiChatConversationDO> {
 
     default List<AiChatConversationDO> selectListByUserId(Long userId) {
+        return selectListByUserId(userId, 100);
+    }
+
+    /**
+     * 【向下兼容安全查询】：按用户查询会话，按时间倒序排序并加入安全上限（默认 100 条，最大 500 条）
+     * 避免因历史产生上万条会话时全表全量加载导致 OOM、数据库卡顿与移动端网络 60s 超时
+     */
+    default List<AiChatConversationDO> selectListByUserId(Long userId, Integer limit) {
         Integer userType = null;
         cn.iocoder.yudao.framework.security.core.LoginUser loginUser = cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUser();
         if (loginUser != null && loginUser.getUserType() != null) {
@@ -25,11 +33,15 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
         } else {
             userType = cn.iocoder.yudao.framework.web.core.util.WebFrameworkUtils.getLoginUserType();
         }
+        LambdaQueryWrapperX<AiChatConversationDO> wrapper = new LambdaQueryWrapperX<AiChatConversationDO>()
+                .eq(AiChatConversationDO::getUserId, userId)
+                .orderByDesc(AiChatConversationDO::getId);
         if (userType != null) {
-            return selectList(AiChatConversationDO::getUserId, userId,
-                    AiChatConversationDO::getUserType, userType);
+            wrapper.eq(AiChatConversationDO::getUserType, userType);
         }
-        return selectList(AiChatConversationDO::getUserId, userId);
+        int maxLimit = (limit != null && limit > 0) ? Math.min(limit, 500) : 100;
+        wrapper.last("LIMIT " + maxLimit);
+        return selectList(wrapper);
     }
 
     default List<AiChatConversationDO> selectListByUserIdAndPinned(Long userId, boolean pinned) {

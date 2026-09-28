@@ -24,6 +24,7 @@ import cn.iocoder.yudao.module.ai.dal.dataobject.knowledge.AiKnowledgeDocumentDO
 import cn.iocoder.yudao.module.ai.dal.dataobject.model.AiChatRoleDO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.model.AiModelDO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.model.AiToolDO;
+import cn.iocoder.yudao.module.ai.dal.mysql.chat.AiChatConversationMapper;
 import cn.iocoder.yudao.module.ai.dal.mysql.chat.AiChatMessageMapper;
 import cn.iocoder.yudao.module.ai.enums.ErrorCodeConstants;
 import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
@@ -115,6 +116,8 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
 
     @Resource
     private AiChatMessageMapper chatMessageMapper;
+    @Resource
+    private AiChatConversationMapper chatConversationMapper;
 
     @Resource
     private AiChatConversationService chatConversationService;
@@ -345,8 +348,40 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                                AiModelDO model, AiChatMessageSendReqVO sendReqVO) {
         List<Message> chatMessages = new ArrayList<>();
         // 1.1 System Context 角色设定（真正发给大模型前）
-        if (StrUtil.isNotBlank(conversation.getSystemMessage())) {
-            String systemMessage = conversation.getSystemMessage();
+        String systemMessage = conversation.getSystemMessage();
+
+        // 【向下兼容旧版本数据】：如果历史旧会话未保存 systemMessage，但绑定了 roleId，则回退从角色表中实时拉取人设提示词进行补充，同时反向回填会话持久化
+        if (StrUtil.isBlank(systemMessage) && conversation.getRoleId() != null) {
+            AiChatRoleDO role = chatRoleService.getChatRole(conversation.getRoleId());
+            if (role != null && StrUtil.isNotBlank(role.getSystemMessage())) {
+                systemMessage = role.getSystemMessage();
+                conversation.setSystemMessage(systemMessage);
+                if (chatConversationMapper != null) {
+                    try {
+                        chatConversationMapper.updateById(new AiChatConversationDO()
+                                .setId(conversation.getId())
+                                .setSystemMessage(systemMessage));
+                    } catch (Exception e) {
+                        log.warn("[调用大模型][兼容旧版本] 异步持久化回填会话 systemMessage 失败: conversationId={}", conversation.getId(), e);
+                    }
+                }
+                log.info("[调用大模型][兼容旧版本] 成功从角色({})回填系统提示词: conversationId={}, systemMessageLength={}",
+                        conversation.getRoleId(), conversation.getId(), systemMessage.length());
+            }
+        }
+
+        // 【向下兼容大模型严格校验】：当指定 response_format 为 json_object 时，OpenAI/DeepSeek 等标准接口强制要求 messages 中必须包含 'json' 关键词
+        if (StrUtil.isNotEmpty(sendReqVO.getResponseFormat())) {
+            boolean hasJsonWord = (systemMessage != null && StrUtil.containsIgnoreCase(systemMessage, "json"))
+                    || (sendReqVO.getContent() != null && StrUtil.containsIgnoreCase(sendReqVO.getContent(), "json"));
+            if (!hasJsonWord) {
+                systemMessage = (StrUtil.isNotBlank(systemMessage) ? systemMessage + "\n\n" : "")
+                        + "请以 JSON 格式返回响应结果 (Response must be formatted as valid JSON)。";
+                log.info("[调用大模型][兼容格式限制] 请求指定了 responseFormat={}，但提示词未包含 json，已自动补充 JSON 返回指令", sendReqVO.getResponseFormat());
+            }
+        }
+
+        if (StrUtil.isNotBlank(systemMessage)) {
             chatMessages.add(new SystemMessage(systemMessage));
             log.info("[调用大模型][已填入系统提示词] conversationId={}, roleId={}, modelId={}, systemMessageLength={}, systemMessage={}",
                     conversation.getId(),

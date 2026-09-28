@@ -128,6 +128,11 @@ public class AiChatConversationServiceImpl implements AiChatConversationService 
     }
 
     @Override
+    public List<AiChatConversationDO> getChatConversationListByUserId(Long userId, Integer limit) {
+        return chatConversationMapper.selectListByUserId(userId, limit);
+    }
+
+    @Override
     public List<AiChatConversationDO> getChatConversationListAll(int limit) {
         return chatConversationMapper.selectListRecent(limit);
     }

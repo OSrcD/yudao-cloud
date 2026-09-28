@@ -50,8 +50,9 @@ public interface AiChatMapper extends BaseMapperX<AiModelDO> {
                 .eq(AiModelDO::getStatus, status)
                 .eq(AiModelDO::getType, type)
                 .eqIfPresent(AiModelDO::getPlatform, platform)
+                // 【向下兼容端类型】：若请求指定为 APP，则匹配 client_type IN ('APP', 'ALL')，确保通用模型能在 APP 端正常返回
                 .inIfPresent(AiModelDO::getClientType, "APP".equalsIgnoreCase(clientType)
-                        ? List.of("APP")
+                        ? List.of("APP", "ALL")
                         : (cn.hutool.core.util.StrUtil.isNotEmpty(clientType) ? List.of(clientType) : null))
                 .orderByDesc(AiModelDO::getIsDefault)
                 .orderByAsc(AiModelDO::getSort));

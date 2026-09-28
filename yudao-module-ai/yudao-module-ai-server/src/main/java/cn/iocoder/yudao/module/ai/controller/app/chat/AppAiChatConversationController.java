@@ -64,10 +64,11 @@ public class AppAiChatConversationController {
     }
 
     @GetMapping("/my-list")
-    @Operation(summary = "获得【我的】聊天对话列表")
+    @Operation(summary = "获得【我的】聊天对话列表", description = "【向下兼容】：按时间倒序返回当前用户的最近会话，默认前 100 条")
     @TransMethodResult
-    public CommonResult<List<AiChatConversationRespVO>> getChatConversationMyList() {
-        List<AiChatConversationDO> list = chatConversationService.getChatConversationListByUserId(getLoginUserId());
+    public CommonResult<List<AiChatConversationRespVO>> getChatConversationMyList(
+            @RequestParam(value = "limit", required = false, defaultValue = "100") Integer limit) {
+        List<AiChatConversationDO> list = chatConversationService.getChatConversationListByUserId(getLoginUserId(), limit);
         if (CollUtil.isEmpty(list)) {
             return success(java.util.Collections.emptyList());
         }
