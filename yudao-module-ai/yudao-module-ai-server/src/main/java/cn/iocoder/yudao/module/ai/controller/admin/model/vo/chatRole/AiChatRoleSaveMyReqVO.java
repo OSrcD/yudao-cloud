@@ -57,4 +57,7 @@ public class AiChatRoleSaveMyReqVO {
     @Schema(description = "自定义 API Key（直连大模型密钥）", example = "sk-xxx")
     private String customApiKey;
 
+    @Schema(description = "自定义用户提示词设定模版 (User Message)", example = "{{ocr_content}}")
+    private String userMessage;
+
 }

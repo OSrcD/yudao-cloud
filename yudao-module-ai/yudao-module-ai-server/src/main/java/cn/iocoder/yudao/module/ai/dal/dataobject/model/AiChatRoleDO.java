@@ -130,4 +130,9 @@ public class AiChatRoleDO extends BaseDO {
      */
     private String businessInfo;
 
+    /**
+     * 自定义用户提示词设定模版 (User Message)
+     */
+    private String userMessage;
+
 }

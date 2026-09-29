@@ -50,6 +50,9 @@ public class AiChatRoleSaveReqVO {
     @Schema(description = "业务信息 JSON（包含行业、身份、主营业务等）")
     private String businessInfo;
 
+    @Schema(description = "自定义用户提示词设定模版 (User Message)", example = "{{ocr_content}}")
+    private String userMessage;
+
     @Schema(description = "引用的知识库编号列表", example = "1,2,3")
     private List<Long> knowledgeIds;
 

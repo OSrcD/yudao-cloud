@@ -89,11 +89,10 @@ public class FileTypeUtils {
         } else {
             response.setHeader("Content-Disposition", "attachment;filename=" + HttpUtils.encodeUtf8(filename));
         }
-        // 针对 video 的特殊处理，解决视频地址在移动端播放的兼容性问题
-        if (StrUtil.containsIgnoreCase(mineType, "video")) {
-            response.setHeader("Accept-Ranges", "bytes");
-            response.setHeader("Content-Length", String.valueOf(content.length));
-        }
+        // 设置 Accept-Ranges 和 Content-Length，解决移动端（如 OTA 安装包下载进度计算、视频播放）的兼容性
+        response.setHeader("Accept-Ranges", "bytes");
+        response.setContentLengthLong(content.length);
+        response.setHeader("Content-Length", String.valueOf(content.length));
         // 输出附件
         IoUtil.write(response.getOutputStream(), false, content);
     }

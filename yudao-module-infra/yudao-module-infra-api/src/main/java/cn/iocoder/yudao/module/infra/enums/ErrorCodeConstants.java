@@ -69,4 +69,8 @@ public interface ErrorCodeConstants {
     ErrorCode DEMO03_GRADE_NOT_EXISTS = new ErrorCode(1_001_201_009, "学生班级不存在");
     ErrorCode DEMO03_GRADE_EXISTS = new ErrorCode(1_001_201_010, "学生班级已存在");
 
+    // ========== App 版本管理 1-001-008-000 ==========
+    ErrorCode APP_VERSION_NOT_EXISTS = new ErrorCode(1_001_008_000, "App 版本不存在");
+    ErrorCode APP_VERSION_CODE_EXISTS = new ErrorCode(1_001_008_001, "该应用的构建版本号已存在");
+
 }
