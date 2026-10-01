@@ -618,6 +618,10 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         }
         message.setCreateTime(LocalDateTime.now());
         chatMessageMapper.insert(message);
+        // 更新会话的最新活跃时间，保证多轮对话在会话列表中实时排在最前面
+        if (conversationId != null) {
+            chatConversationMapper.updateUpdateTime(conversationId);
+        }
         return message;
     }
 

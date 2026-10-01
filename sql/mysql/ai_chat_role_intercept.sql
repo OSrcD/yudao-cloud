@@ -31,7 +31,8 @@ ALTER TABLE `ai_chat_role` ADD COLUMN `custom_api_key` VARCHAR(512) DEFAULT NULL
 -- 6. 添加官方模板衍生与业务信息字段
 ALTER TABLE `ai_chat_role` 
   ADD COLUMN `template_role_id` BIGINT DEFAULT NULL COMMENT '引用的官方模板角色编号',
-  ADD COLUMN `business_info` TEXT DEFAULT NULL COMMENT '业务信息 JSON（行业、身份、主营业务等）';
+  ADD COLUMN `business_info` TEXT DEFAULT NULL COMMENT '业务信息 JSON（行业、身份、主营业务等）',
+  ADD COLUMN `user_message` TEXT DEFAULT NULL COMMENT '自定义用户提示词模版 (User Message)';
 
 -- 7. 为 ai_model 增加 is_default 字段并配置默认 APP 模型
 ALTER TABLE `ai_model` ADD COLUMN `is_default` BIT(1) NOT NULL DEFAULT b'0' COMMENT '是否默认模型';

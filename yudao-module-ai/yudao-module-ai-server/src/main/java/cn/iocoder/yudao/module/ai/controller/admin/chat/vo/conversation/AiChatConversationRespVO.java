@@ -58,6 +58,9 @@ public class AiChatConversationRespVO implements VO {
     @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalDateTime createTime;
 
+    @Schema(description = "更新时间/最后活跃时间")
+    private LocalDateTime updateTime;
+
     // ========== 关联 role 信息 ==========
 
     @Schema(description = "角色头像", example = "https://www.iocoder.cn/1.png")

@@ -5,8 +5,10 @@ import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.module.ai.controller.admin.chat.vo.conversation.AiChatConversationPageReqVO;
 import cn.iocoder.yudao.module.ai.dal.dataobject.chat.AiChatConversationDO;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -35,6 +37,8 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
         }
         LambdaQueryWrapperX<AiChatConversationDO> wrapper = new LambdaQueryWrapperX<AiChatConversationDO>()
                 .eq(AiChatConversationDO::getUserId, userId)
+                .orderByDesc(AiChatConversationDO::getPinned)
+                .orderByDesc(AiChatConversationDO::getUpdateTime)
                 .orderByDesc(AiChatConversationDO::getId);
         if (userType != null) {
             wrapper.eq(AiChatConversationDO::getUserType, userType);
@@ -54,7 +58,9 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
         }
         LambdaQueryWrapperX<AiChatConversationDO> wrapper = new LambdaQueryWrapperX<AiChatConversationDO>()
                 .eq(AiChatConversationDO::getUserId, userId)
-                .eq(AiChatConversationDO::getPinned, pinned);
+                .eq(AiChatConversationDO::getPinned, pinned)
+                .orderByDesc(AiChatConversationDO::getUpdateTime)
+                .orderByDesc(AiChatConversationDO::getId);
         if (userType != null) {
             wrapper.eq(AiChatConversationDO::getUserType, userType);
         }
@@ -62,10 +68,12 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
     }
 
     /**
-     * 管理端：最近全部会话（含管理员 + 会员 App），不按 userType 过滤
+     * 管理端：最近全部会话（含管理员 + 会员 App），不按 userType 过滤，按置顶与最近活跃时间倒序
      */
     default List<AiChatConversationDO> selectListRecent(int limit) {
         return selectList(new LambdaQueryWrapperX<AiChatConversationDO>()
+                .orderByDesc(AiChatConversationDO::getPinned)
+                .orderByDesc(AiChatConversationDO::getUpdateTime)
                 .orderByDesc(AiChatConversationDO::getId)
                 .last("LIMIT " + Math.max(1, Math.min(limit, 1000))));
     }
@@ -75,7 +83,21 @@ public interface AiChatConversationMapper extends BaseMapperX<AiChatConversation
                 .eqIfPresent(AiChatConversationDO::getUserId, pageReqVO.getUserId())
                 .likeIfPresent(AiChatConversationDO::getTitle, pageReqVO.getTitle())
                 .betweenIfPresent(AiChatConversationDO::getCreateTime, pageReqVO.getCreateTime())
+                .orderByDesc(AiChatConversationDO::getPinned)
+                .orderByDesc(AiChatConversationDO::getUpdateTime)
                 .orderByDesc(AiChatConversationDO::getId));
+    }
+
+    /**
+     * 更新会话的最新活跃时间（用于发送消息后快速置顶会话）
+     */
+    default void updateUpdateTime(Long id) {
+        if (id == null) {
+            return;
+        }
+        update(null, new LambdaUpdateWrapper<AiChatConversationDO>()
+                .eq(AiChatConversationDO::getId, id)
+                .set(AiChatConversationDO::getUpdateTime, LocalDateTime.now()));
     }
 
 }
