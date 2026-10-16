@@ -3,8 +3,8 @@ spring:
     name: yudao-server
 
   profiles:
-#    active: local
-    active: prod
+    active: local
+#    active: prod
   main:
     allow-circular-references: true # 允许循环依赖，因为项目是三层架构，无法避免这个情况。
 #    allow-bean-definition-overriding: false # 允许 Bean 覆盖，例如说 Feign 等会存在重复定义的服务
@@ -13,8 +13,8 @@ spring:
   servlet:
     # 文件上传相关配置项
     multipart:
-      max-file-size: 128MB # 单个文件大小
-      max-request-size: 256MB # 设置总上传的文件大小
+      max-file-size: 400MB # 单个文件大小
+      max-request-size: 456MB # 设置总上传的文件大小
 
   # Jackson 配置项
   jackson:

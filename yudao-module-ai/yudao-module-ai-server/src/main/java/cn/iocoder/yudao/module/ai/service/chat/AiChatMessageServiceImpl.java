@@ -700,7 +700,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
             // Step 1: 前置逆向工程
             AiChatMessageSendReqVO req1 = new AiChatMessageSendReqVO()
                     .setConversationId(conversationId)
-                    .setContent("")
+                    .setContent(role1.getSystemMessage())
                     .setAttachmentUrls(videoUrls)
                     .setUseContext(true)
                     .setIsAnalysis(true);
@@ -772,7 +772,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                     .setResponseFormat("json_object");
 
             // 3. 连环调用：使用 concatWith 确保顺序执行
-            return sendChatMessageStream(req1, userId)
+            return Flux.defer(() -> sendChatMessageStream(req1, userId))
                     .concatWith(Flux.defer(() -> sendChatMessageStream(req2, userId)))
                     .concatWith(Flux.defer(() -> sendChatMessageStream(req3, userId)))
                     .concatWith(Flux.defer(() -> sendChatMessageStream(req4, userId)))
@@ -821,7 +821,7 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
                     .setResponseFormat("json_object");
 
             // 3. 连环调用：使用 concatWith 确保顺序执行
-            return sendChatMessageStream(req1, userId)
+            return Flux.defer(() -> sendChatMessageStream(req1, userId))
                     .concatWith(Flux.defer(() -> sendChatMessageStream(req2, userId)))
                     .concatWith(Flux.defer(() -> sendChatMessageStream(req3, userId)));
         }
