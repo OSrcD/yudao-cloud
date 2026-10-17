@@ -65,4 +65,7 @@ public class MemberUserBaseVO {
     @Schema(description = "AI最大发送次数", example = "50")
     private Integer aiChatMaxCount;
 
+    @Schema(description = "是否专业版用户（开启后可使用AI私信等功能）", example = "true")
+    private Boolean isPro;
+
 }

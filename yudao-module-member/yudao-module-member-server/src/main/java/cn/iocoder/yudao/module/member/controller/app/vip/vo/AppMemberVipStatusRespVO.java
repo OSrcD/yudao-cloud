@@ -21,4 +21,7 @@ public class AppMemberVipStatusRespVO {
     @Schema(description = "是否已发放过试用", example = "true")
     private Boolean trialUsed;
 
+    @Schema(description = "是否专业版用户", example = "true")
+    private Boolean isPro;
+
 }

@@ -60,6 +60,7 @@ public class MemberVipServiceImpl implements MemberVipService {
         resp.setExpireTime(user.getVipExpireTime());
         resp.setTrialUsed(trialUsed);
         resp.setTrial(trial);
+        resp.setIsPro(Boolean.TRUE.equals(user.getIsPro()));
         return resp;
     }
 

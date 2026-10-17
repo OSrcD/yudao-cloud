@@ -158,4 +158,9 @@ public class MemberUserDO extends TenantBaseDO {
      */
     private Boolean vipTrialUsed;
 
+    /**
+     * 是否专业版用户（开启后可使用AI私信等专业版专属功能）
+     */
+    private Boolean isPro;
+
 }

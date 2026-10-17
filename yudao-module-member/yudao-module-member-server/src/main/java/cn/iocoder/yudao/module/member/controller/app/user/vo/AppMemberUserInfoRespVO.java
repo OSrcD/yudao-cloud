@@ -38,6 +38,9 @@ public class AppMemberUserInfoRespVO {
     @Schema(description = "是否成为推广员", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
     private Boolean brokerageEnabled;
 
+    @Schema(description = "是否专业版用户（开启后可使用AI私信等专属功能）", example = "true")
+    private Boolean isPro;
+
     @Schema(description = "用户 App - 会员等级")
     @Data
     public static class Level {
