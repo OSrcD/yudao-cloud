@@ -68,6 +68,11 @@ public class AiChatRoleServiceImpl implements AiChatRoleService {
         if (StrUtil.isBlank(systemMessage)) {
             return systemMessage;
         }
+        String trimmed = systemMessage.trim();
+        // 如果是 JEV 决策设定（JSON 格式包含 questions 等），保持原样，不追加评论格式后缀
+        if (trimmed.startsWith("{") && trimmed.endsWith("}") && trimmed.contains("\"questions\"")) {
+            return systemMessage;
+        }
         if (StrUtil.isBlank(clientType) || "APP".equalsIgnoreCase(clientType)) {
             if (!systemMessage.contains("最终输出格式") && !systemMessage.contains("\"comment\": \"最终生成的评论内容\"")) {
                 return systemMessage.trim() + APP_INTERCEPT_OUTPUT_FORMAT_SUFFIX;
@@ -89,7 +94,8 @@ public class AiChatRoleServiceImpl implements AiChatRoleService {
         if (StrUtil.isBlank(chatRole.getClientType())) {
             chatRole.setClientType("PC");
         }
-        if (createReqVO.getTemplateRoleId() != null && createReqVO.getTemplateRoleId() > 0) {
+        // 如果是基于官方模板新增的角色：仅在未传入自定义提示词设定时，引用官方模板提示词内容
+        if (StrUtil.isBlank(chatRole.getSystemMessage()) && createReqVO.getTemplateRoleId() != null && createReqVO.getTemplateRoleId() > 0) {
             AiChatRoleDO templateRole = chatRoleMapper.selectById(createReqVO.getTemplateRoleId());
             if (templateRole != null && StrUtil.isNotBlank(templateRole.getSystemMessage())) {
                 chatRole.setSystemMessage(templateRole.getSystemMessage());
@@ -115,8 +121,8 @@ public class AiChatRoleServiceImpl implements AiChatRoleService {
         if (StrUtil.isBlank(chatRole.getClientType())) {
             chatRole.setClientType("APP");
         }
-        // 如果是基于官方模板新增的角色：直接引用官方模板提示词内容（系统提示词中保留占位符，不替换变量）
-        if (createReqVO.getTemplateRoleId() != null && createReqVO.getTemplateRoleId() > 0) {
+        // 如果是基于官方模板新增的角色：仅在未传入自定义提示词设定时，引用官方模板提示词内容（系统提示词中保留占位符，不替换变量）
+        if (StrUtil.isBlank(chatRole.getSystemMessage()) && createReqVO.getTemplateRoleId() != null && createReqVO.getTemplateRoleId() > 0) {
             AiChatRoleDO templateRole = chatRoleMapper.selectById(createReqVO.getTemplateRoleId());
             if (templateRole != null && StrUtil.isNotBlank(templateRole.getSystemMessage())) {
                 chatRole.setSystemMessage(templateRole.getSystemMessage());
@@ -140,7 +146,8 @@ public class AiChatRoleServiceImpl implements AiChatRoleService {
         // 更新角色
         AiChatRoleDO updateObj = BeanUtils.toBean(updateReqVO, AiChatRoleDO.class);
         Long templateRoleId = updateReqVO.getTemplateRoleId();
-        if (templateRoleId != null && templateRoleId > 0) {
+        // 如果是基于官方模板的角色：仅在未传入自定义提示词设定时，引用官方模板提示词内容
+        if (StrUtil.isBlank(updateObj.getSystemMessage()) && templateRoleId != null && templateRoleId > 0) {
             AiChatRoleDO templateRole = chatRoleMapper.selectById(templateRoleId);
             if (templateRole != null && StrUtil.isNotBlank(templateRole.getSystemMessage())) {
                 updateObj.setSystemMessage(templateRole.getSystemMessage());
@@ -167,9 +174,9 @@ public class AiChatRoleServiceImpl implements AiChatRoleService {
         // 更新
         AiChatRoleDO updateObj = BeanUtils.toBean(updateReqVO, AiChatRoleDO.class);
         String clientType = StrUtil.isNotBlank(updateObj.getClientType()) ? updateObj.getClientType() : chatRole.getClientType();
-        // 如果是基于官方模板的角色：直接引用官方模板提示词内容（系统提示词中保留占位符，不替换变量）
+        // 如果是基于官方模板的角色：仅在未传入自定义提示词设定时，引用官方模板提示词内容（系统提示词中保留占位符，不替换变量）
         Long templateRoleId = updateReqVO.getTemplateRoleId() != null ? updateReqVO.getTemplateRoleId() : chatRole.getTemplateRoleId();
-        if (templateRoleId != null && templateRoleId > 0) {
+        if (StrUtil.isBlank(updateObj.getSystemMessage()) && templateRoleId != null && templateRoleId > 0) {
             AiChatRoleDO templateRole = chatRoleMapper.selectById(templateRoleId);
             if (templateRole != null && StrUtil.isNotBlank(templateRole.getSystemMessage())) {
                 updateObj.setSystemMessage(templateRole.getSystemMessage());

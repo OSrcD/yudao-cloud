@@ -53,10 +53,13 @@ public class AppAiChatRoleController {
         }
         PageResult<AiChatRoleDO> pageResult = chatRoleService.getChatRoleMyPage(pageReqVO, getLoginUserId());
         PageResult<AiChatRoleRespVO> voPage = BeanUtils.toBean(pageResult, AiChatRoleRespVO.class);
-        // 保护官方预设角色的核心提示词与模板角色的预设提示词：对外隐藏 systemMessage，防止终端直接读取商业机密提示词
+        // 保护官方预设角色的核心提示词：对外隐藏商业机密提示词（但允许用户查看自己创建的角色、以及公开的 AI 决策/JEV 判定模板）
         if (CollUtil.isNotEmpty(voPage.getList())) {
             voPage.getList().forEach(vo -> {
-                if (Boolean.TRUE.equals(vo.getPublicStatus()) || (vo.getTemplateRoleId() != null && vo.getTemplateRoleId() > 0)) {
+                boolean isDecisionRole = "AI决策".equals(vo.getCategory())
+                        || (vo.getSystemMessage() != null && vo.getSystemMessage().contains("\"questions\""));
+                // 仅对非决策类的公开官方预设角色对外隐藏 systemMessage
+                if (!isDecisionRole && Boolean.TRUE.equals(vo.getPublicStatus())) {
                     vo.setSystemMessage(null);
                 }
             });
@@ -84,8 +87,11 @@ public class AppAiChatRoleController {
             return success(null);
         }
         AiChatRoleRespVO vo = BeanUtils.toBean(chatRole, AiChatRoleRespVO.class);
-        // 保护官方预设角色的核心提示词与模板角色的预设提示词：对外隐藏 systemMessage
-        if (Boolean.TRUE.equals(vo.getPublicStatus()) || (vo.getTemplateRoleId() != null && vo.getTemplateRoleId() > 0)) {
+        // 保护官方预设角色的核心提示词：对外隐藏商业机密提示词（但允许用户查看自己创建的角色、以及公开的 AI 决策/JEV 判定模板）
+        boolean isOwner = ObjUtil.equal(chatRole.getUserId(), getLoginUserId());
+        boolean isDecisionRole = "AI决策".equals(chatRole.getCategory())
+                || (chatRole.getSystemMessage() != null && chatRole.getSystemMessage().contains("\"questions\""));
+        if (!isOwner && !isDecisionRole && Boolean.TRUE.equals(chatRole.getPublicStatus())) {
             vo.setSystemMessage(null);
         }
         return success(vo);

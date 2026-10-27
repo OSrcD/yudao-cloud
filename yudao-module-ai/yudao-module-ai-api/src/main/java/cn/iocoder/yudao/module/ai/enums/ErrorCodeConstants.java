@@ -68,5 +68,9 @@ public interface ErrorCodeConstants {
     ErrorCode AI_POINT_NOT_ENOUGH = new ErrorCode(1_040_012_000, "AI 算力积分不足");
     ErrorCode AI_BALANCE_NOT_ENOUGH = new ErrorCode(1_040_012_001, "账户余额不足，请先充值");
 
+    // ========== API 决策模型 (JEV) 1-040-014-000 ==========
+    ErrorCode JEV_KEY_NOT_CONFIGURED = new ErrorCode(1_040_014_001, "JEV 决策模型 API 密钥未配置");
+    ErrorCode JEV_EXECUTE_ERROR = new ErrorCode(1_040_014_002, "JEV 决策执行失败: {}");
 
 }
+

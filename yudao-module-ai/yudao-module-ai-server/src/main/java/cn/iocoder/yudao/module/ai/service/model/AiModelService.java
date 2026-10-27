@@ -133,6 +133,18 @@ public interface AiModelService {
     ChatModel getChatModelByApiKey(Long id, String apiKey);
 
     /**
+     * 获得段式消息发送（非流式）专用的 ChatModel 对象
+     * <p>
+     * 版本兼容：针对图一 commandcode 模型/密钥，在段式调用时将 API 请求地址重定向至 http://127.0.0.1:3050，
+     * 兼容后续新版本修改后台 API 地址后段式无法使用的问题，而流式调用保持使用新地址不变。
+     *
+     * @param id 模型编号
+     * @param customApiKey 自定义 API 密钥（可为空）
+     * @return ChatModel 对象
+     */
+    ChatModel getChatModelForSyncSend(Long id, String customApiKey);
+
+    /**
      * 获得 ImageModel 对象
      *
      * @param id 编号
@@ -197,5 +209,22 @@ public interface AiModelService {
      * @return AihubmixVideoApi 对象
      */
     cn.iocoder.yudao.module.ai.framework.ai.core.model.aihubmix.api.video.AihubmixVideoApi getAihubmixVideoApi(Long id);
+
+    /**
+     * 获得 TypeSafe JEV 决策模型 API 对象
+     *
+     * @param id 模型编号（可选）
+     * @return JevApi 对象
+     */
+    cn.iocoder.yudao.module.ai.framework.ai.core.model.jev.api.JevApi getJevApi(Long id);
+
+    /**
+     * 获得 TypeSafe JEV 决策模型 API 对象（支持自定义 API Key）
+     *
+     * @param id 模型编号（可选）
+     * @param customApiKey 自定义 API Key
+     * @return JevApi 对象
+     */
+    cn.iocoder.yudao.module.ai.framework.ai.core.model.jev.api.JevApi getJevApi(Long id, String customApiKey);
 
 }

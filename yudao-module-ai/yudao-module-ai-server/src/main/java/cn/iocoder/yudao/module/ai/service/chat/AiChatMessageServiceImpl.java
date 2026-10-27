@@ -156,14 +156,9 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
             throw exception(CHAT_CONVERSATION_NOT_EXISTS);
         }
         List<AiChatMessageDO> historyMessages = chatMessageMapper.selectListByConversationId(conversation.getId());
-        // 1.2 校验模型
+        // 1.2 校验模型（段式发送使用专属兼容模式，针对 commandcode 模型将 API 请求地址自动重定向至 http://127.0.0.1:3050）
         AiModelDO model = modalService.validateModel(conversation.getModelId());
-        ChatModel chatModel;
-        if (cn.hutool.core.util.StrUtil.isNotBlank(sendReqVO.getCustomApiKey())) {
-            chatModel = modalService.getChatModelByApiKey(model.getId(), sendReqVO.getCustomApiKey());
-        } else {
-            chatModel = modalService.getChatModel(model.getId());
-        }
+        ChatModel chatModel = modalService.getChatModelForSyncSend(model.getId(), sendReqVO.getCustomApiKey());
 
         // 2.1 知识库召回
         List<AiKnowledgeSegmentSearchRespBO> knowledgeSegments = recallKnowledgeSegment(
@@ -350,23 +345,39 @@ public class AiChatMessageServiceImpl implements AiChatMessageService {
         // 1.1 System Context 角色设定（真正发给大模型前）
         String systemMessage = conversation.getSystemMessage();
 
+        // 优先获得会话绑定的聊天角色
+        AiChatRoleDO role = conversation.getRoleId() != null ? chatRoleService.getChatRole(conversation.getRoleId()) : null;
+
         // 【向下兼容旧版本数据】：如果历史旧会话未保存 systemMessage，但绑定了 roleId，则回退从角色表中实时拉取人设提示词进行补充，同时反向回填会话持久化
-        if (StrUtil.isBlank(systemMessage) && conversation.getRoleId() != null) {
-            AiChatRoleDO role = chatRoleService.getChatRole(conversation.getRoleId());
-            if (role != null && StrUtil.isNotBlank(role.getSystemMessage())) {
-                systemMessage = role.getSystemMessage();
-                conversation.setSystemMessage(systemMessage);
-                if (chatConversationMapper != null) {
-                    try {
-                        chatConversationMapper.updateById(new AiChatConversationDO()
-                                .setId(conversation.getId())
-                                .setSystemMessage(systemMessage));
-                    } catch (Exception e) {
-                        log.warn("[调用大模型][兼容旧版本] 异步持久化回填会话 systemMessage 失败: conversationId={}", conversation.getId(), e);
-                    }
+        if (StrUtil.isBlank(systemMessage) && role != null && StrUtil.isNotBlank(role.getSystemMessage())) {
+            systemMessage = role.getSystemMessage();
+            conversation.setSystemMessage(systemMessage);
+            if (chatConversationMapper != null) {
+                try {
+                    chatConversationMapper.updateById(new AiChatConversationDO()
+                            .setId(conversation.getId())
+                            .setSystemMessage(systemMessage));
+                } catch (Exception e) {
+                    log.warn("[调用大模型][兼容旧版本] 异步持久化回填会话 systemMessage 失败: conversationId={}", conversation.getId(), e);
                 }
-                log.info("[调用大模型][兼容旧版本] 成功从角色({})回填系统提示词: conversationId={}, systemMessageLength={}",
-                        conversation.getRoleId(), conversation.getId(), systemMessage.length());
+            }
+            log.info("[调用大模型][兼容旧版本] 成功从角色({})回填系统提示词: conversationId={}, systemMessageLength={}",
+                    conversation.getRoleId(), conversation.getId(), systemMessage.length());
+        }
+
+        // 【针对 JEV 决策场景】：从数据库 ai_chat_role 表的 business_info 字段动态替换 my_business 内部的占位符
+        if (StrUtil.isNotBlank(systemMessage) && systemMessage.contains("my_business")) {
+            String businessInfo = role != null ? role.getBusinessInfo() : null;
+            if (StrUtil.isNotBlank(businessInfo)) {
+                String renderedSystemMessage = AiUtils.renderJevMyBusinessPlaceholders(systemMessage, businessInfo);
+                if (!Objects.equals(systemMessage, renderedSystemMessage)) {
+                    log.info("[调用大模型][JEV业务画像动态注入] 成功从数据库角色(id={}, name={})的 business_info 替换 my_business 占位符",
+                            role.getId(), role.getName());
+                    systemMessage = renderedSystemMessage;
+                }
+            } else {
+                log.warn("[调用大模型][JEV业务画像警告] 当前角色(id={})未配置 business_info 企业画像信息，my_business 占位符将保留",
+                        role != null ? role.getId() : "null");
             }
         }
 

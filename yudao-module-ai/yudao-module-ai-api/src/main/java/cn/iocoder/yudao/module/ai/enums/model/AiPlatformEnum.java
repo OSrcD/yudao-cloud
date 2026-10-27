@@ -32,6 +32,7 @@ public enum AiPlatformEnum implements ArrayValuable<String> {
     // ========== 中转平台 ==========
     GeekAI("GeekAI", "GeekAI"),
     Aihubmix("Aihubmix", "推理时代"),
+    COMMAND_CODE("CommandCode", "Command Code"),
 
 
     // ========== 国外平台 ==========

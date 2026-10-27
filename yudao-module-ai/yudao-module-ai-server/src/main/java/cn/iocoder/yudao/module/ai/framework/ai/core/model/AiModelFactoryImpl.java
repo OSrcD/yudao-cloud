@@ -13,6 +13,8 @@ import cn.iocoder.yudao.module.ai.enums.model.AiPlatformEnum;
 import cn.iocoder.yudao.module.ai.framework.ai.config.AiAutoConfiguration;
 import cn.iocoder.yudao.module.ai.framework.ai.config.YudaoAiProperties;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.baichuan.BaiChuanChatModel;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.commandcode.CommandCodeChatModel;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.jev.api.JevApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.doubao.DouBaoChatModel;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.gemini.GeminiChatModel;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.image.GeekAiGeminiImageApi;
@@ -184,6 +186,8 @@ public class AiModelFactoryImpl implements AiModelFactory {
                 return buildOllamaChatModel(url);
             case GROK:
                 return buildGrokChatModel(apiKey,url);
+            case COMMAND_CODE:
+                return buildCommandCodeChatModel(apiKey, url);
             default:
                 throw new IllegalArgumentException(StrUtil.format("未知平台({})", platform));
         }
@@ -225,6 +229,8 @@ public class AiModelFactoryImpl implements AiModelFactory {
                 return SpringUtil.getBean(GeminiChatModel.class);
             case OLLAMA:
                 return SpringUtil.getBean(OllamaChatModel.class);
+            case COMMAND_CODE:
+                return SpringUtil.getBean(CommandCodeChatModel.class);
             default:
                 throw new IllegalArgumentException(StrUtil.format("未知平台({})", platform));
         }
@@ -317,6 +323,13 @@ public class AiModelFactoryImpl implements AiModelFactory {
     public SunoApi getOrCreateSunoApi(String apiKey, String url) {
         String cacheKey = buildClientCacheKey(SunoApi.class, AiPlatformEnum.SUNO.getPlatform(), apiKey, url);
         return Singleton.get(cacheKey, (Func0<SunoApi>) () -> new SunoApi(url));
+    }
+
+    @Override
+    public JevApi getOrCreateJevApi(String apiKey, String url) {
+        String cacheKey = buildClientCacheKey(cn.iocoder.yudao.module.ai.framework.ai.core.model.jev.api.JevApi.class, "JEV", apiKey, url);
+        return Singleton.get(cacheKey, (Func0<cn.iocoder.yudao.module.ai.framework.ai.core.model.jev.api.JevApi>) () ->
+                new cn.iocoder.yudao.module.ai.framework.ai.core.model.jev.api.JevApi(url, apiKey));
     }
 
     @Override
@@ -874,6 +887,13 @@ public class AiModelFactoryImpl implements AiModelFactory {
             }
 
         };
+    }
+
+    private CommandCodeChatModel buildCommandCodeChatModel(String apiKey, String url) {
+        url = StrUtil.blankToDefault(url, CommandCodeChatModel.DEFAULT_BASE_URL);
+        OpenAiChatModel openAiChatModel = buildOpenAiChatModel(apiKey, url);
+        JevApi jevApi = getOrCreateJevApi(apiKey, url);
+        return new CommandCodeChatModel(openAiChatModel, jevApi);
     }
 
 }

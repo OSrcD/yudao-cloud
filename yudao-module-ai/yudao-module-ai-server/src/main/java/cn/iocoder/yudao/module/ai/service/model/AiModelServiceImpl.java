@@ -7,6 +7,8 @@ import cn.iocoder.yudao.module.ai.framework.ai.core.model.geekai.api.video.GeekA
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.genai.api.GenAiApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.midjourney.api.MidjourneyApi;
 import cn.iocoder.yudao.module.ai.framework.ai.core.model.suno.api.SunoApi;
+import cn.iocoder.yudao.module.ai.framework.ai.core.model.jev.api.JevApi;
+import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
@@ -34,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
+
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.ai.enums.ErrorCodeConstants.*;
 
@@ -44,6 +48,7 @@ import static cn.iocoder.yudao.module.ai.enums.ErrorCodeConstants.*;
  */
 @Service
 @Validated
+@Slf4j
 public class AiModelServiceImpl implements AiModelService {
 
     @Resource
@@ -175,6 +180,48 @@ public class AiModelServiceImpl implements AiModelService {
         return modelFactory.getOrCreateChatModel(platform, customApiKey, apiKey.getUrl());
     }
 
+    /**
+     * 图一 commandcode 模型段式调用本地兼容 API 地址
+     */
+    private static final String COMMAND_CODE_COMPAT_URL = "http://127.0.0.1:3050";
+
+    @Override
+    public ChatModel getChatModelForSyncSend(Long id, String customApiKey) {
+        AiModelDO model = validateModel(id);
+        AiApiKeyDO apiKey = apiKeyService.validateApiKey(model.getKeyId());
+        AiPlatformEnum platform = AiPlatformEnum.validatePlatform(apiKey.getPlatform());
+        String effectiveApiKey = StrUtil.isNotBlank(customApiKey) ? customApiKey : apiKey.getApiKey();
+        String url = apiKey.getUrl();
+        // 版本兼容：段式发送（/send）如命中 commandcode 模型/密钥，强制将 API 请求地址定向为 http://127.0.0.1:3050
+        if (isCommandCodeModel(model, apiKey, customApiKey)) {
+            url = COMMAND_CODE_COMPAT_URL;
+            log.info("[getChatModelForSyncSend] 命中 commandcode 兼容模型 [modelId={}, model={}, apiKeyName={}]，段式请求 API 地址已重定向为: {}",
+                    id, model.getModel(), apiKey.getName(), url);
+        }
+        return modelFactory.getOrCreateChatModel(platform, effectiveApiKey, url);
+    }
+
+    private boolean isCommandCodeModel(AiModelDO model, AiApiKeyDO apiKey, String customApiKey) {
+        if (apiKey != null) {
+            if (StrUtil.equalsIgnoreCase(apiKey.getName(), "commandcode")
+                    || StrUtil.equalsIgnoreCase(apiKey.getApiKey(), "commandcode")
+                    || StrUtil.equalsIgnoreCase(apiKey.getPlatform(), "CommandCode")) {
+                return true;
+            }
+        }
+        if (model != null) {
+            if (StrUtil.containsIgnoreCase(model.getModel(), "commandcode")
+                    || StrUtil.containsIgnoreCase(model.getName(), "commandcode")
+                    || StrUtil.equalsIgnoreCase(model.getPlatform(), "CommandCode")) {
+                return true;
+            }
+        }
+        if (StrUtil.equalsIgnoreCase(customApiKey, "commandcode")) {
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public ImageModel getImageModel(Long id) {
         AiModelDO model = validateModel(id);
@@ -267,6 +314,34 @@ public class AiModelServiceImpl implements AiModelService {
                 tinyflow.setLlmProvider(id -> new OllamaLlm(ollamaLlmConfig));
                 break;
         }
+    }
+
+    @Override
+    public JevApi getJevApi(Long id) {
+        return getJevApi(id, null);
+    }
+
+    @Override
+    public JevApi getJevApi(Long id, String customApiKey) {
+        if (id != null) {
+            AiModelDO model = validateModel(id);
+            AiApiKeyDO apiKey = apiKeyService.validateApiKey(model.getKeyId());
+            String key = StrUtil.isNotBlank(customApiKey) ? customApiKey : apiKey.getApiKey();
+            return modelFactory.getOrCreateJevApi(key, apiKey.getUrl());
+        }
+        // 如果未指定 modelId，尝试获取 COMMAND_CODE 平台的默认 apiKey
+        AiApiKeyDO apiKey = null;
+        try {
+            apiKey = apiKeyService.getRequiredDefaultApiKey(
+                    AiPlatformEnum.COMMAND_CODE.getPlatform(), CommonStatusEnum.ENABLE.getStatus());
+        } catch (Exception ignored) {
+        }
+        String url = apiKey != null ? apiKey.getUrl() : null;
+        String key = StrUtil.isNotBlank(customApiKey) ? customApiKey : (apiKey != null ? apiKey.getApiKey() : null);
+        if (StrUtil.isBlank(key)) {
+            throw exception(JEV_KEY_NOT_CONFIGURED);
+        }
+        return modelFactory.getOrCreateJevApi(key, url);
     }
 
 }
